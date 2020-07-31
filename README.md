@@ -4,81 +4,62 @@ The processor has a classic CISC instruction which is inspired by x86, 68000 and
 
 Made by [Bastiaan van der Plaat](https://bastiaan.ml/)
 
+## Pages that inspired this project
+- https://en.wikipedia.org/wiki/Intel_80386
+- https://en.wikipedia.org/wiki/ARM_architecture
+- https://en.wikipedia.org/wiki/Motorola_68000
+- https://en.wikipedia.org/wiki/X86_instruction_listings
+- http://unixwiz.net/techtips/x86-jumps.html
+
 ## The new things compared to the Neva processor:
 - A completely new 32-bit design
 - Which is on assembly level almost backwards compatible with the Neva processor
-- A full 40-bit address bus so much memory access (2**40 = 1099511627776 bytes = ~1024 GB)
-- But when all segments are zero you got just a linair 32-bit address field to work
+- A full 40-bit address bus so much memory access (2 ** 40 = 1099511627776 bytes = ~1024 GB)
+- But when all segments are zero you got just get a linair 32-bit address field to work
 - A 32-bit data bus interface with the memory
 - 6 more general purpose registers
 - Same memory I/O interface with text output and keyboard input
 - Taro video controller intergration
 - New segement based memory model vs difficult banking model
 - Variable instruction length encoding
-- 8 hardware interupt lines
 - All instructions are conditional
 - More flags and so conditions for instructions
 - More bitwise instructions
-- Instruction extension system with CPUID instruction
-- Multiply and division instructions extension
+- Instruction extension system with CPUID instruction to detect extenstions
+
+## Some things I like to include in the future:
+- A small instruction and data cache (like a Harvard design)
+- A small RISC like instruction pipeline
+- A hardware interupt system
+- Integer Multiply and division instructions extension
 
 ## Instruction encoding:
-Immidate data mode instruction encoding:
+Like the Neva processor, I have kept the instruction encoding quite simple.
+But since the instructions with 4 bytes of data would become very large,
+each instruction also has a reduced form of 4 bytes.
+
+### Immidate data mode instruction encoding:
 ```
 opcode regm largem addrm | dest cond | imm | imm
    5   1=0    1=0    1   |  4    4   |  8  |  8
 ```
 
-Immidate data mode large instruction encoding:
+### Immidate data mode large instruction encoding:
 ```
 opcode regm largem addrm | dest cond | imm | imm | imm | imm
    5   1=0    1=1    1   |  4    4   |  8  |  8  |  8  |  8
 ```
 
-Register data mode instruction encoding:
+### Register data mode instruction encoding:
 ```
 opcode regm largem addrm | dest cond | source disp | disp
    5   1=1    1=0    1   |  4    4   |    4    4   |  8
 ```
 
-Register data mode large instruction encoding:
+### Register data mode large instruction encoding:
 ```
-opcode regm largem addrm | dest cond | source disp | disp | disp | source shift
-   5   1=1    1=1    1   |  4    4   |    4    4   |  8   |  8   |    4     4
-```
-
-Some assembly code scrambles:
-```
-moveq a, 0x12345678
-movgt b, 0x1234
-
-mov a, [sp - 0x40]
-and a, 0x000000ff
-
-push b + 0x50
-
-mov [sp], b + 0x50
-add sp, 4
-
-mov a, 0x6000
-ret c - 0x30 + es << 2
-ret c - 0x30 + es * 8
-
-
-pop a
-
-
-mov ip, 0x50
-subeq ip, 0x30
-
-
-// numbers[x]
-mov b, [bp - 400 + e << 2]
-
-mov c, e
-shl c, 2
-add c, bp
-mov a, [c - 400]
+opcode regm largem addrm | dest cond | source disp | disp | disp source | source shift
+   5   1=1    1=1    1   |  4    4   |    4    4   |  8   |  7     1    |    3     5
 ```
 
 ## Conditions:
@@ -130,12 +111,8 @@ mov a, [c - 400]
 ```
 
 ## Kora (re)starts jump address
-When Kora (re)starts it jumps to to the code segemnt stored at `0xfffffffff7` and the address at `0xfffffffffb`
-
-## Hardware interupts
-Locations stored at `00:64`
-
-When one off the interupt lines is set high the processor finishes the current instruction and calls the interupt address at the beginning of memory.
+When Kora (re)starts the instruction pointer register is set to `0` and the code segment register is set to `0xffffffff`
+So the processor starts executing code at 0xffffffff00
 
 ## Instructions:
 ```
@@ -175,28 +152,45 @@ sal = shl
 15 = sar
 16 = rol
 17 = ror
+18 = rcl
+19 = rcr
 
 # Stack instructions
 -- dest register is new code bank
-18 = jmp
-19 = push
-20 = pop
-21 = call
-22 = ret
-
-# Interupt extension instructions
-?
-
-# Integer Multiplication and Division Extension
-?
-0x40 = mul = unsigned
-0x41 = smul = signed
-0x42 = div = unsigned ?
-0x43 = sdiv = signed ?
-0x44 = mod = unsigned ?
-0x45 = smod = signed ?
+20 = jmp
+21 = push
+22 = pop
+23 = call
+24 = ret
 ```
 
-## Reference pages:
-- https://en.wikipedia.org/wiki/X86_instruction_listings
-- http://unixwiz.net/techtips/x86-jumps.html
+## Some assembly code scrambles:
+```
+moveq a, 0x12345678
+movgt b, 0x1234
+
+mov a, [sp - 0x40]
+and a, 0x000000ff
+
+push b + 0x50
+
+mov [sp], b + 0x50
+add sp, 4
+
+mov a, 0x6000
+ret c - 0x30 + es << 32
+ret c - 0x30 + es * 4294967296
+
+pop a
+
+mov ip, 0x50
+subeq ip, 0x30
+
+// numbers[x]
+mov b, [bp - 400 + e << 2]
+
+mov c, e
+shl c, 2
+add c, bp
+mov a, [c - 400]
+```
