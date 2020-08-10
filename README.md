@@ -2,6 +2,8 @@
 The Kora processor is a new processor based on the Neva, but extremely expanded and better in every way.
 The processor has a classic CISC instruction which is inspired by x86, 68000 and ARM instruction sets.
 
+*This is a prototype instruction set architecture no real implementation is made to until today.*
+
 Made by [Bastiaan van der Plaat](https://bastiaan.ml/)
 
 ## Pages that inspired this project
@@ -25,49 +27,50 @@ Made by [Bastiaan van der Plaat](https://bastiaan.ml/)
 - All instructions are conditional
 - More flags and so conditions for instructions
 - More bitwise instructions
-- Instruction extension system with CPUID instruction to detect extenstions
 
 ## Some things I like to include in the future:
 - A small instruction and data cache (like a Harvard design)
 - A small RISC like instruction pipeline
+- An instruction extension system with CPUID instruction to detect extenstions
 - A hardware interupt system
 - Integer Multiply and division instructions extension
 
 ## Instruction encoding:
 Like the Neva processor, I have kept the instruction encoding quite simple.
-But since the instructions with 4 bytes of data would become very large,
-each instruction also has a reduced form of 4 bytes.
 
-### Immidate data mode instruction encoding:
-```
-opcode regm largem addrm | dest cond | imm | imm
-   5   1=0    1=0    1   |  4    4   |  8  |  8
-```
+*I know that the instructions are to big and I'm working on a smaller version for each instruction.*
 
-### Immidate data mode large instruction encoding:
+### Immidate instruction encoding:
 ```
-opcode regm largem addrm | dest cond | imm | imm | imm | imm
-   5   1=0    1=1    1   |  4    4   |  8  |  8  |  8  |  8
+opcode mode | dest cond | imm | imm | imm | imm
+   5    3   |  4    4   |  8  |  8  |  8  |  8
 ```
 
-### Register data mode instruction encoding:
+### Register instruction encoding:
 ```
-opcode regm largem addrm | dest cond | source disp | disp
-   5   1=1    1=0    1   |  4    4   |    4    4   |  8
+opcode mode | dest cond | source disp | disp | disp source | source shift
+   5    3   |  4    4   |    4    4   |  8   |  7     1    |    3     5
 ```
 
-### Register data mode large instruction encoding:
+## Modes:
 ```
-opcode regm largem addrm | dest cond | source disp | disp | disp source | source shift
-   5   1=1    1=1    1   |  4    4   |    4    4   |  8   |  7     1    |    3     5
+0 = data = imm
+1 = address = imm, data = byte [address]
+2 = address = imm, data = hword [address]
+3 = address = imm, data = word [address]
+4 = data = reg + dis + reg << shift
+5 = address = reg + dis + reg << shift, data = byte [address]
+6 = address = reg + dis + reg << shift, data = hword [address]
+7 = address = reg + dis + reg << shift, data = word [address]
 ```
 
 ## Conditions:
 ```
  0 = always = if (true)
- 1 = jc = if (carry)
- 2 = jnc = if (!carry)
- 3 = jz = if (zero)
+ 1 = never = if (false)
+ 2 = jc = if (carry)
+ 3 = jnc = if (!carry)
+ 4 = jz = if (zero)
  5 = jnz = if (!zero)
  6 = js = if (sign)
  7 = jns = if (!sign)
@@ -107,7 +110,7 @@ opcode regm largem addrm | dest cond | source disp | disp | disp source | source
 1 = zero flag
 2 = sign flag
 3 = overflow flag
-16 = interrupt flag
+8 = halted flag
 ```
 
 ## Kora (re)starts jump address
@@ -116,52 +119,39 @@ So the processor starts executing code at 0xffffffff00
 
 ## Instructions:
 ```
-# CPU / Load / Store instructions
  0 = nop
- 1 = cpuid
-    a = BAST                ; Manufacturer name 8 ASCII bytes
-    b = IAAN
-    c = KORA                ; Processor name 8 ASCII bytes
-    d = LUXE
-    e = 0001 0002           ; Version 1.2
-    f = 00000000 00000000   ; Features bit array
-        00000000 00000011   ; 0 = Interrupts Extension
-                            ; 1 = Integer Multiplication and Division Extension
- 2 = hlt
- 3 = load
- 4 = store
+
+# Memory instructions
+ 1 = load
+ 2 = store byte
+ 3 = store hword
+ 4 = store word
 
 # Arithmetic instructions
- 3 = add
- 4 = adc
- 5 = sub
- 6 = sbb
- 7 = neg
- 8 = cmp
+ 5 = add
+ 6 = adc
+ 7 = sub
+ 8 = sbb
+ 9 = neg
+10 = cmp
 
-# Bitwise instructions
- 9 = and
-10 = or
-11 = xor
-12 = not
+# Bitwise / Shift instructions
+11 = and
+12 = or
+13 = xor
+14 = not
+15 = shl
+16 = shr
+17 = sar
 
-# Shift and rotate instructions
-13 = shl
-14 = shr
-sal = shl
-15 = sar
-16 = rol
-17 = ror
-18 = rcl
-19 = rcr
-
-# Stack instructions
--- dest register is new code bank
-20 = jmp
-21 = push
-22 = pop
-23 = call
-24 = ret
+# Jump / Stack instructions
+18 = jmp (dest reg is new code bank)
+19 = push
+20 = pop
+21 = call
+22 = ret
+23 = segcall (dest reg is new code bank) (two mem access)
+24 = segret (dest reg is new code bank) (two mem access)
 ```
 
 ## Some assembly code scrambles:
