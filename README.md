@@ -104,7 +104,7 @@ opcode regmode size | addrmode dest cond | source disp | disp
 
 ## Registers:
 ```
-# General registers (always usable)
+# General registers (writable / storable with every instruction)
  0 = a = General purpose A register
  1 = b = General purpose B register
  2 = c = General purpose C register
@@ -114,7 +114,7 @@ opcode regmode size | addrmode dest cond | source disp | disp
  6 = g = General purpose G register
  7 = h = General purpose H register
 
-# Special register (only usable in load and store instructions)
+# Special register (writable / storable only with load / store instructions)
  8 = ip = Instruction pointer register
  9 = sp = Stack pointer register
 10 = bp = Stack Base pointer register
