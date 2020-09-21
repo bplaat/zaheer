@@ -1,4 +1,4 @@
-# Kora 32-bit processor
+# Kora 16-bit processor for a Altera Cyclone II FPGA dev board (is the idea)
 The Kora processor is a new processor based on the Neva, but extremely expanded and better in every way.
 The processor has a classic CISC instruction which is inspired by x86, 68000 and ARM instruction sets.
 
@@ -14,11 +14,11 @@ Made by [Bastiaan van der Plaat](https://bastiaan.ml/)
 - http://unixwiz.net/techtips/x86-jumps.html
 
 ## The new things compared to the Neva processor:
-- A completely new 32-bit design
+- A completely new 16-bit design
 - Which is on assembly level almost backwards compatible with the Neva processor
-- A full 40-bit address bus so much memory access (2 ** 40 = 1099511627776 bytes = ~1024 GB)
-- But when all segments are zero you got just get a linair 32-bit address field to work
-- A 32-bit data bus interface with the memory
+- A full 24-bit address bus so much memory access (2 ** 24 = 16777216 bytes = 16 MB)
+- But when all segments are zero you got just get a linair 16-bit address field to work
+- A 16-bit data bus interface with the memory
 - 6 more general purpose registers
 - Same memory I/O interface with text output and keyboard input
 - Taro video controller intergration
@@ -38,30 +38,48 @@ Made by [Bastiaan van der Plaat](https://bastiaan.ml/)
 ## Instruction encoding:
 Like the Neva processor, I have kept the instruction encoding quite simple.
 
-*I know that the instructions are to big and I'm working on a smaller version for each instruction.*
-
-### Immidate instruction encoding:
+### Immidate micro encoding (2 bytes):
 ```
-opcode mode | dest cond | imm | imm | imm | imm
-   5    3   |  4    4   |  8  |  8  |  8  |  8
+opcode regmode size | addrmode dest imm
+   5      1     2   |    1      3    4
 ```
 
-### Register instruction encoding:
+### Immidate small encoding (3 bytes):
 ```
-opcode mode | dest cond | source disp | disp | disp source | source shift
-   5    3   |  4    4   |    4    4   |  8   |  7     1    |    3     5
+opcode regmode size | addrmode dest cond | imm
+   5      1     2   |    1      3    4   |  8
 ```
 
-## Modes:
+### Immidate normal encoding (4 bytes):
 ```
-0 = data = imm
-1 = address = imm, data = byte [address]
-2 = address = imm, data = hword [address]
-3 = address = imm, data = word [address]
-4 = data = reg + dis + reg << shift
-5 = address = reg + dis + reg << shift, data = byte [address]
-6 = address = reg + dis + reg << shift, data = hword [address]
-7 = address = reg + dis + reg << shift, data = word [address]
+opcode regmode size | addrmode dest cond | imm | imm
+   5      1     2   |    1      3    4   |  8  |  8
+```
+
+### Register micro encoding (2 bytes):
+```
+opcode regmode size | addrmode dest source
+   5      1     2   |    1      3    4
+```
+
+### Register small encoding (3 bytes):
+```
+opcode regmode size | addrmode dest cond | source disp
+   5      1     2   |    1      3    4   |    4    4
+```
+
+### Register normal encoding (4 bytes):
+```
+opcode regmode size | addrmode dest cond | source disp | disp
+   5      1     2   |    1      3    4   |    4    4   |  8
+```
+
+## Sizes:
+```
+0 = micro - load / store word
+1 = small - load / store word
+2 = normal - load / store word
+3 = normal - load / store byte
 ```
 
 ## Conditions:
@@ -86,6 +104,7 @@ opcode mode | dest cond | source disp | disp | disp source | source shift
 
 ## Registers:
 ```
+# General registers (always usable)
  0 = a = General purpose A register
  1 = b = General purpose B register
  2 = c = General purpose C register
@@ -94,6 +113,8 @@ opcode mode | dest cond | source disp | disp | disp source | source shift
  5 = f = General purpose F register
  6 = g = General purpose G register
  7 = h = General purpose H register
+
+# Special register (only usable in load and store instructions)
  8 = ip = Instruction pointer register
  9 = sp = Stack pointer register
 10 = bp = Stack Base pointer register
@@ -114,18 +135,18 @@ opcode mode | dest cond | source disp | disp | disp source | source shift
 ```
 
 ## Kora (re)starts jump address
-When Kora (re)starts the instruction pointer register is set to `0` and the code segment register is set to `0xffffffff`
-So the processor starts executing code at 0xffffffff00
+When Kora (re)starts the instruction pointer register is set to `0` and the code segment register is set to `0xffff`
+So the processor starts executing code at 0xffff00
 
 ## Instructions:
 ```
  0 = nop
 
 # Memory instructions
- 1 = load
- 2 = store byte
- 3 = store hword
- 4 = store word
+ 1 = load general
+ 2 = load special
+ 3 = store general
+ 4 = store special
 
 # Arithmetic instructions
  5 = add
@@ -152,35 +173,4 @@ So the processor starts executing code at 0xffffffff00
 22 = ret
 23 = segcall (dest reg is new code bank) (two mem access)
 24 = segret (dest reg is new code bank) (two mem access)
-```
-
-## Some assembly code scrambles:
-```
-moveq a, 0x12345678
-movgt b, 0x1234
-
-mov a, [sp - 0x40]
-and a, 0x000000ff
-
-push b + 0x50
-
-mov [sp], b + 0x50
-add sp, 4
-
-mov a, 0x6000
-ret c - 0x30 + es << 32
-ret c - 0x30 + es * 4294967296
-
-pop a
-
-mov ip, 0x50
-subeq ip, 0x30
-
-// numbers[x]
-mov b, [bp - 400 + e << 2]
-
-mov c, e
-shl c, 2
-add c, bp
-mov a, [c - 400]
 ```
