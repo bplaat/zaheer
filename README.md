@@ -31,55 +31,58 @@ Made by [Bastiaan van der Plaat](https://bastiaan.ml/)
 ## Some things I like to include in the future:
 - A small instruction and data cache (like a Harvard design)
 - A small RISC like instruction pipeline
-- An instruction extension system with CPUID instruction to detect extenstions
-- A hardware interupt system
-- Integer Multiply and division instructions extension
+- A hardware interupt system (for keyboard and vsync)
 
 ## Instruction encoding:
 Like the Neva processor, I have kept the instruction encoding quite simple.
 
 ### Immidate micro encoding (2 bytes):
 ```
-opcode regmode size | addrmode dest imm
-   5      1     2   |    1      3    4
+opcode mode | dest imm
+   5    3   |  4    4
 ```
 
 ### Immidate small encoding (3 bytes):
 ```
-opcode regmode size | addrmode dest cond | imm
-   5      1     2   |    1      3    4   |  8
+opcode mode | dest cond | imm
+   5    3   |  4    4   |  8
 ```
 
 ### Immidate normal encoding (4 bytes):
 ```
-opcode regmode size | addrmode dest cond | imm | imm
-   5      1     2   |    1      3    4   |  8  |  8
+opcode mode | dest cond | imm | imm
+   5    3   |  4    4   |  8  |  8
 ```
 
 ### Register micro encoding (2 bytes):
 ```
-opcode regmode size | addrmode dest source
-   5      1     2   |    1      3    4
+opcode mode | dest source
+   5    3   |  4     4
 ```
 
 ### Register small encoding (3 bytes):
 ```
-opcode regmode size | addrmode dest cond | source disp
-   5      1     2   |    1      3    4   |    4    4
+opcode mode | dest cond | source disp
+   5    3   |  4    4   |    4    4
 ```
 
 ### Register normal encoding (4 bytes):
 ```
-opcode regmode size | addrmode dest cond | source disp | disp
-   5      1     2   |    1      3    4   |    4    4   |  8
+opcode mode | dest cond | source disp | disp
+   5    3   |  4    4   |    4    4   |  8
 ```
 
-## Sizes:
+## Modes:
 ```
-0 = micro - load / store word
-1 = small - load / store word
-2 = normal - load / store word
-3 = normal - load / store byte
+0 = immidate mode, micro size
+1 = immidate mode, small size
+2 = immidate mode, normal size
+3 = immidate mode, normal size, address mode (default loads word)
+
+4 = register mode, micro size
+5 = register mode, small size
+6 = register mode, normal size
+7 = register mode, normal size, address mode (default loads word)
 ```
 
 ## Conditions:
@@ -104,7 +107,6 @@ opcode regmode size | addrmode dest cond | source disp | disp
 
 ## Registers:
 ```
-# General registers (writable / storable with every instruction)
  0 = a = General purpose A register
  1 = b = General purpose B register
  2 = c = General purpose C register
@@ -114,7 +116,6 @@ opcode regmode size | addrmode dest cond | source disp | disp
  6 = g = General purpose G register
  7 = h = General purpose H register
 
-# Special register (writable / storable only with load / store instructions)
  8 = ip = Instruction pointer register
  9 = sp = Stack pointer register
 10 = bp = Stack Base pointer register
@@ -131,6 +132,7 @@ opcode regmode size | addrmode dest cond | source disp | disp
 1 = zero flag
 2 = sign flag
 3 = overflow flag
+
 8 = halted flag
 ```
 
@@ -143,34 +145,46 @@ So the processor starts executing code at 0xffff00
  0 = nop
 
 # Memory instructions
- 1 = load general
- 2 = load special
- 3 = store general
- 4 = store special
+ 1 = lw (load word)
+ 2 = lb (load byte signed)
+ 3 = lbu (load byte unsigned)
+ 4 = sw (store word)
+ 5 = sb (store byte)
 
 # Arithmetic instructions
- 5 = add
- 6 = adc
- 7 = sub
- 8 = sbb
- 9 = neg
-10 = cmp
+ 6 = add
+ 7 = adc
+ 8 = sub
+ 9 = sbb
+10 = neg
+11 = cmp
 
 # Bitwise / Shift instructions
-11 = and
-12 = or
-13 = xor
-14 = not
-15 = shl
-16 = shr
-17 = sar
+12 = and
+13 = or
+14 = xor
+15 = not
+16 = shl
+17 = shr
+18 = sar
 
 # Jump / Stack instructions
-18 = jmp (dest reg is new code bank)
-19 = push
-20 = pop
-21 = call
-22 = ret
-23 = segcall (dest reg is new code bank) (two mem access)
-24 = segret (dest reg is new code bank) (two mem access)
+19 = jmp (dest reg is new code bank)
+20 = push
+21 = pop
+22 = call
+23 = ret
+24 = scall (dest reg is new code bank) (two mem access)
+25 = sret (dest reg is new code bank) (two mem access)
+
+# Multiply / Division instructions (extention)
+26 = mul (two reg access)
+27 = mulu (two reg access)
+28 = div (two reg access)
+29 = divu (two reg access)
+
+# Reserved opcodes
+30 = reserved
+31 = reserved
+32 = reserved
 ```
