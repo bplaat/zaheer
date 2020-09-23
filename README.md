@@ -16,7 +16,7 @@ Made by [Bastiaan van der Plaat](https://bastiaan.ml/)
 ## The new things compared to the Neva processor:
 - A completely new 16-bit design
 - Which is on assembly level almost backwards compatible with the Neva processor
-- A full 24-bit address bus so much memory access (2 ** 24 = 16777216 bytes = 16 MB)
+- A full 24-bit address bus so much more memory access (2 ** 24 = 16777216 bytes = 16 MB)
 - But when all segments are zero you got just get a linair 16-bit address field to work
 - A 16-bit data bus interface with the memory
 - 6 more general purpose registers
@@ -142,7 +142,7 @@ So the processor starts executing code at 0xffff00
 
 ## Instructions:
 ```
- 0 = nop
+ 0 = nop (no operation)
 
 # Memory instructions
  1 = lw (load word)
@@ -152,39 +152,64 @@ So the processor starts executing code at 0xffff00
  5 = sb (store byte)
 
 # Arithmetic instructions
- 6 = add
- 7 = adc
- 8 = sub
- 9 = sbb
-10 = neg
-11 = cmp
+ 6 = add (add)
+ 7 = adc (add with carry)
+ 8 = sub (subtract)
+ 9 = sbb (subtract with borrow)
+10 = neg (negate)
+11 = cmp (compare)
 
 # Bitwise / Shift instructions
-12 = and
-13 = or
-14 = xor
-15 = not
-16 = shl
-17 = shr
-18 = sar
+12 = and (and)
+13 = or (or)
+14 = xor (xor)
+15 = not (not)
+16 = shl (logical shift left)
+17 = shr (logical shift right)
+18 = sar (arithmetic shift right)
 
 # Jump / Stack instructions
-19 = jmp (dest reg is new code bank)
-20 = push
-21 = pop
-22 = call
-23 = ret
-24 = scall (dest reg is new code bank) (two mem access)
-25 = sret (dest reg is new code bank) (two mem access)
+19 = jmp (jump (jump absolute))
+   (dest reg is new code bank, es = old code bank)
+20 = bra (branch (jump relative))
+   (dest reg is new code bank, es = old code bank)
+21 = push (push)
+22 = pop (pop)
+23 = call (call (jump absolute))
+   (dest reg is new code bank, es = old code bank)
+24 = bcall (branch call (jump relative))
+   (dest reg is new code bank, es = old code bank)
+25 = ret (return)
+   (dest reg is new code bank, es = old code bank)
+
+# Other instructions
+26 = cpuid (cpu id) (get cpu infromation)
+   a = BVDP ; Processor Manufacter name first 4 ascii bytes
+   b = LAAT ; Processor Manufacter name last 4 ascii bytes
+   c = KORA ; Processor name first 4 ascii bytes
+   d = WEBX / SIMX / FPGA ; Processor name last 4 ascii bytes
+   e = 0x01 00 ; Processor version first byte '.' last byte
+   f = 0b00000000 00000001 ; Processor features bit list
+      ; 0 = Multiply / Division extention
+      ; 1 = Software / hardware Interupt extention
+
+      ; 8 = Taro video generator chip
+      ; 9 = Kiki PS/2 keyboard interface chip
+      ; 10 = SD card storage device?? (need I2C, SPI)
+   g = 0xffff ; Processor Manufactoring date unix time stamp low word
+   h = 0xffff ; Processor Manufactoring date unix time stamp high word
 
 # Multiply / Division instructions (extention)
-26 = mul (two reg access)
-27 = mulu (two reg access)
-28 = div (two reg access)
-29 = divu (two reg access)
+27 = mul (multiply)
+   (two reg access)
+28 = mulu (multiply unsigned)
+   (two reg access)
+29 = div (divide)
+   (two reg access)
+30 = divu (divide unsigned)
+   (two reg access)
 
 # Reserved opcodes
-30 = reserved
 31 = reserved
 32 = reserved
 ```
