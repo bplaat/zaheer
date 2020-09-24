@@ -1,10 +1,15 @@
-# Kora 16-bit processor for a Altera Cyclone II FPGA dev board (is the idea)
-The Kora processor is a new processor based on the Neva, but extremely expanded and better in every way.
+# The Kora 16-bit Processor Project
+The Kora processor is a new processor based on the Neva processor, but extremely expanded and better in every way.
 The processor has a classic CISC instruction which is inspired by x86, 68000 and ARM instruction sets.
 
-*This is a prototype instruction set architecture no real implementation is made to until today.*
-
 Made by [Bastiaan van der Plaat](https://bastiaan.ml/)
+
+## Subprojects:
+What is new is that I want to run the processor on different platforms, namely:
+
+- Web Simulator version like [neva-processor.ml](https://neva-processor.ml/)
+- Arduino Uno Simulator version
+- Altera Cyclone II FPGA dev board version
 
 ## Pages that inspired this project
 - https://en.wikipedia.org/wiki/Intel_80386
@@ -87,22 +92,22 @@ opcode mode | dest cond | source disp | disp
 
 ## Conditions:
 ```
- 0 = always = if (true)
- 1 = never = if (false)
- 2 = jc = if (carry)
- 3 = jnc = if (!carry)
- 4 = jz = if (zero)
- 5 = jnz = if (!zero)
- 6 = js = if (sign)
- 7 = jns = if (!sign)
- 8 = jo = if (overflow)
- 9 = jno = if (!overflow)
-10 = ja = if (!carry && !zero)
-11 = jna = if (carry || zero)
-12 = jl = if (sign != overflow)
-13 = jnl = if (sign == overflow)
-14 = jg = if (zero && sign == overflow)
-15 = jng = if (!zero || sign != overflow)
+ 0 = - (always) = if (true)
+ 1 = -n (never) = if (false)
+ 2 = -c (carry) = if (carry)
+ 3 = -nc (not carry) = if (!carry)
+ 4 = -z (zero) = if (zero)
+ 5 = -nz (not zero) = if (!zero)
+ 6 = -s (sign) = if (sign)
+ 7 = -ns (not sign) = if (!sign)
+ 8 = -o (overflow) = if (overflow)
+ 9 = -no (not overflow) = if (!overflow)
+10 = -a (above) = if (!carry && !zero)
+11 = -na (not above) = if (carry || zero)
+12 = -l (lesser) = if (sign != overflow)
+13 = -nl (not lesser) = if (sign == overflow)
+14 = -g (greater) = if (zero && sign == overflow)
+15 = -ng (not greater) = if (!zero || sign != overflow)
 ```
 
 ## Registers:
@@ -184,20 +189,28 @@ So the processor starts executing code at 0xffff00
 
 # Other instructions
 26 = cpuid (cpu id) (get cpu infromation)
-   a = BVDP ; Processor Manufacter name first 4 ascii bytes
-   b = LAAT ; Processor Manufacter name last 4 ascii bytes
-   c = KORA ; Processor name first 4 ascii bytes
-   d = WEBX / SIMX / FPGA ; Processor name last 4 ascii bytes
-   e = 0x01 00 ; Processor version first byte '.' last byte
-   f = 0b00000000 00000001 ; Processor features bit list
+
+   a = ; Processor Manufacter ID
+      0x219f = Bastiaan van der Plaat
+
+   b = ; Processor ID
+      0xca3f = Arduino Kora Simulator
+      0xe21a = Web Kora Simulator
+      0xd6b2 = Kora FPGA
+
+   c = 0x01 00 ; Processor version first byte '.' last byte
+
+   d = 0b00000000 00000001 ; Processor features bit list
       ; 0 = Multiply / Division extention
       ; 1 = Software / hardware Interupt extention
 
       ; 8 = Taro video generator chip
       ; 9 = Kiki PS/2 keyboard interface chip
       ; 10 = SD card storage device?? (need I2C, SPI)
-   g = 0xffff ; Processor Manufactoring date unix time stamp low word
-   h = 0xffff ; Processor Manufactoring date unix time stamp high word
+
+   e = 0xffff ; Processor Manufactoring date unix time stamp low word
+
+   f = 0xffff ; Processor Manufactoring date unix time stamp high word
 
 # Multiply / Division instructions (extention)
 27 = mul (multiply)
