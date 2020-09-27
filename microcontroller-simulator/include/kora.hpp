@@ -4,7 +4,7 @@
 #include "memory.hpp"
 #include "compile_time.hpp"
 
-// Undef Arduino / AVR defines :D
+// Undef ESP8266 defines :(
 #undef SP
 #undef ADC
 

@@ -6,9 +6,9 @@
 
 #define SS_PIN 10
 
-#define MEMORY_SIZE (uint32_t)(640) * 1024
-#define MEMORY_REAL_SIZE 2 * 512
-#define MEMORY_BANK_SIZE 256
+#define MEMORY_SIZE 640 * 1024
+#define MEMORY_REAL_SIZE 56 * 1024
+#define MEMORY_BANK_SIZE 512
 
 #define BOOT_ADDRESS 0x0200
 const char PROGMEM boot_file_name[] = "/BOOT.BIN";

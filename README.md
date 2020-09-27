@@ -8,8 +8,11 @@ Made by [Bastiaan van der Plaat](https://bastiaan.ml/)
 What is new is that I want to run the processor on different platforms, namely:
 
 - Web Simulator version like [neva-processor.ml](https://neva-processor.ml/)
-- Arduino Uno Simulator version
+   - Web (JavaScript) Kora Assembler
+- NodeMCU (ESP8266) Microcontroller Simulator version
+   - Modern (C) Kora Assembler
 - Altera Cyclone II FPGA dev board version
+   - Native (Kora Assembly) Kora Assembler
 
 ## Pages that inspired this project
 - https://en.wikipedia.org/wiki/Intel_80386
@@ -194,9 +197,9 @@ So the processor starts executing code at 0xffff00
       0x219f = Bastiaan van der Plaat
 
    b = ; Processor ID
-      0xca3f = Arduino Kora Simulator
       0xe21a = Web Kora Simulator
-      0xd6b2 = Kora FPGA
+      0xca3f = Microcontroller Kora Simulator
+      0x86b2 = Kora FPGA
 
    c = 0x01 00 ; Processor version first byte '.' last byte
 
