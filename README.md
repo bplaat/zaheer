@@ -1,4 +1,4 @@
-# The Kora 16-bit Processor Project
+# The Kora 32-bit Processor Project
 The Kora processor is a new processor based on the Neva processor, but extremely expanded and better in every way.
 The processor has a classic CISC instruction which is inspired by x86, 68000 and ARM instruction sets.
 
@@ -22,11 +22,11 @@ What is new is that I want to run the processor on different platforms, namely:
 - http://unixwiz.net/techtips/x86-jumps.html
 
 ## The new things compared to the Neva processor:
-- A completely new 16-bit design
+- A completely new 32-bit design
 - Which is on assembly level almost backwards compatible with the Neva processor
-- A full 24-bit address bus so much more memory access (2 ** 24 = 16777216 bytes = 16 MB)
-- But when all segments are zero you got just get a linair 16-bit address field to work
-- A 16-bit data bus interface with the memory
+- A full 40-bit address bus so much more memory access (2 ** 40 = 1099511627776  bytes = 1024 GB)
+- But when all segments are zero you got just get a linair 32-bit address field to work
+- A 32-bit data bus interface with the memory
 - 6 more general purpose registers
 - Same memory I/O interface with text output and keyboard input
 - Taro video controller intergration
@@ -50,16 +50,16 @@ opcode mode | dest imm
    5    3   |  4    4
 ```
 
-### Immidate small encoding (3 bytes):
-```
-opcode mode | dest cond | imm
-   5    3   |  4    4   |  8
-```
-
-### Immidate normal encoding (4 bytes):
+### Immidate small encoding (4 bytes):
 ```
 opcode mode | dest cond | imm | imm
    5    3   |  4    4   |  8  |  8
+```
+
+### Immidate normal encoding (6 bytes):
+```
+opcode mode | dest cond | imm | imm | imm | imm
+   5    3   |  4    4   |  8  |  8  |  8  |  8
 ```
 
 ### Register micro encoding (2 bytes):
@@ -68,16 +68,16 @@ opcode mode | dest source
    5    3   |  4     4
 ```
 
-### Register small encoding (3 bytes):
-```
-opcode mode | dest cond | source disp
-   5    3   |  4    4   |    4    4
-```
-
-### Register normal encoding (4 bytes):
+### Register small encoding (4 bytes):
 ```
 opcode mode | dest cond | source disp | disp
    5    3   |  4    4   |    4    4   |  8
+```
+
+### Register normal encoding (6 bytes):
+```
+opcode mode | dest cond | source disp | disp | disp | enable source2 shift
+   5    3   |  4    4   |    4    4   |  8   |  8   |   1       4      3
 ```
 
 ## Modes:
@@ -145,87 +145,46 @@ opcode mode | dest cond | source disp | disp
 ```
 
 ## Kora (re)starts jump address
-When Kora (re)starts the instruction pointer register is set to `0` and the code segment register is set to `0xffff`
-So the processor starts executing code at 0xffff00
+When Kora (re)starts the instruction pointer register is set to `0` and the code segment register is set to `0xffffffff`
+So the processor starts executing code at 0xffffffff00
 
 ## Instructions:
-```
- 0 = nop (no operation)
-
-# Memory instructions
- 1 = lw (load word)
- 2 = lb (load byte signed)
- 3 = lbu (load byte unsigned)
- 4 = sw (store word)
- 5 = sb (store byte)
-
-# Arithmetic instructions
- 6 = add (add)
- 7 = adc (add with carry)
- 8 = sub (subtract)
- 9 = sbb (subtract with borrow)
-10 = neg (negate)
-11 = cmp (compare)
-
-# Bitwise / Shift instructions
-12 = and (and)
-13 = or (or)
-14 = xor (xor)
-15 = not (not)
-16 = shl (logical shift left)
-17 = shr (logical shift right)
-18 = sar (arithmetic shift right)
-
-# Jump / Stack instructions
-19 = jmp (jump (jump absolute))
-   (dest reg is new code bank, es = old code bank)
-20 = bra (branch (jump relative))
-   (dest reg is new code bank, es = old code bank)
-21 = push (push)
-22 = pop (pop)
-23 = call (call (jump absolute))
-   (dest reg is new code bank, es = old code bank)
-24 = bcall (branch call (jump relative))
-   (dest reg is new code bank, es = old code bank)
-25 = ret (return)
-   (dest reg is new code bank, es = old code bank)
-
-# Other instructions
-26 = cpuid (cpu id) (get cpu infromation)
-
-   a = ; Processor Manufacter ID
-      0x219f = Bastiaan van der Plaat
-
-   b = ; Processor ID
-      0xe21a = Web Kora Simulator
-      0xca3f = Microcontroller Kora Simulator
-      0x86b2 = Kora FPGA
-
-   c = 0x01 00 ; Processor version first byte '.' last byte
-
-   d = 0b00000000 00000001 ; Processor features bit list
-      ; 0 = Multiply / Division extention
-      ; 1 = Software / hardware Interupt extention
-
-      ; 8 = Taro video generator chip
-      ; 9 = Kiki PS/2 keyboard interface chip
-      ; 10 = SD card storage device?? (need I2C, SPI)
-
-   e = 0xffff ; Processor Manufactoring date unix time stamp low word
-
-   f = 0xffff ; Processor Manufactoring date unix time stamp high word
-
-# Multiply / Division instructions (extention)
-27 = mul (multiply)
-   (two reg access)
-28 = mulu (multiply unsigned)
-   (two reg access)
-29 = div (divide)
-   (two reg access)
-30 = divu (divide unsigned)
-   (two reg access)
-
-# Reserved opcodes
-31 = reserved
-32 = reserved
-```
+| #  | Name  | Meaning                          | Operation                                            |
+| -- | ----- | -------------------------------- | ---------------------------------------------------- |
+| 0  | nop   | no operation                     | \-                                                   |
+|    |       |                                  |                                                      |
+| 1  | lw    | load word (32-bit)               | dest = data                                          |
+| 2  | lhw   | load signed half word (16-bit)   | dast = data & 0xffff (signed)                        |
+| 3  | lhwu  | load unsigned half word (16-bit) | dast = data & 0xffff                                 |
+| 4  | lb    | load signed byte (8-bit)         | dest = data & 0xff (signed)                          |
+| 5  | lbu   | load unsigned byte (8-bit)       | dest = data & 0xff                                   |
+| 6  | sw    | store word (32-bit)              | \[data\] = dest                                      |
+| 7  | shw   | store half word (16-bit)         | \[data\] = dest & 0xffff                             |
+| 8  | sb    | store byte (8-bit)               | \[data\] = dest & 0xff                               |
+|    |       |                                  |                                                      |
+| 9  | add   | add                              | dest += data                                         |
+| 10 | adc   | add with carry                   | dest += data + carry                                 |
+| 11 | sub   | subtract                         | dest -= data                                         |
+| 12 | sbb   | subtract with borrow             | dest -= data + borrow                                |
+| 13 | cmp   | compare                          | dest - data (only set flags)                         |
+|    |       |                                  |                                                      |
+| 14 | and   | and                              | dest &= data                                         |
+| 15 | or    | or                               | dest |= data                                         |
+| 16 | xor   | xor                              | dest ^= data                                         |
+| 17 | not   | not                              | dest = ~data                                         |
+| 18 | shl   | logical shift lift               | dest <<= data & 0x1f                                 |
+| 19 | shr   | logical shift right              | dest >>= data & 0x1f                                 |
+| 20 | sar   | arithmetic shift right           | dest >>= data & 0x1f (signed)                        |
+|    |       |                                  |                                                      |
+| 21 | mul   | signed multiply                  | dest \*= data (lower word), h = (higher word)        |
+| 22 | mulu  | unsigned multiply                | dest \*= data (lower word), h = (higher word)        |
+| 23 | div   | signed divide                    | dest /= data (word), h = (remainder)                 |
+| 24 | divu  | unsigned divide                  | dest /= data (word), h = (remainder)                 |
+|    |       |                                  |                                                      |
+| 25 | jmp   | jump                             | es = cs, cs = dest, ip = data                        |
+| 26 | rjmp  | relative jump                    | es = cs, cs = dest, ip += data                       |
+| 27 | push  | push                             | \[sp\] = data, sp -= 4                               |
+| 28 | pop   | pop                              | sp += 4, dest = \[sp\]                               |
+| 29 | call  | call                             | es = cs, cs = dest, \[sp\] = ip, sp -= 4, ip = data  |
+| 30 | rcall | relative call                    | es = cs, cs = dest, \[sp\] = ip, sp -= 4, ip += data |
+| 31 | ret   | return                           | es = cs, cs = dest, sp += 4 + data, ip = \[sp\]      |
