@@ -1,4 +1,4 @@
-# The Kora 32-bit Processor Project
+# The Kora 16-bit Processor Project
 The Kora processor is a new processor based on the Neva processor, but extremely expanded and better in every way.
 The processor has a classic CISC instruction which is inspired by x86, 68000, ARM and RISC-V instruction sets.
 
@@ -35,9 +35,9 @@ As I said, I want the kora processor to become a complete computer platform, whi
 <br/>
 
 ## The new things compared to the Neva processor
-- A completely new 32-bit design
+- A new 16-bit simple design like the Neva processor
 - A 24-bit external segmented address bus so much more memory access (2 ** 24 = 16 MB)
-- But when all segments are zero you got just get a linair 32/24-bit address field to work
+- But when all segments are zero you got just get a linair 16-bit address field to work
 - A 16-bit data bus interface with the memory
 - 6 more general purpose registers
 - Taro video controller intergration
@@ -65,6 +65,8 @@ Like the Neva processor, I have kept the instruction encoding quite simple, the 
 <br/>
 
 ## Conditions
+
+Unlike the Neva processor every instructions is conditional, this can benefit some assembly patterns:
 
 | #  | Name | Meaning      | Condition                 |
 | -- | ---- | ------------ | ------------------------- |
@@ -95,6 +97,8 @@ Like the Neva processor, I have kept the instruction encoding quite simple, the 
 <br/>
 
 ## Registers
+
+The Kora processor also has way more registers and all internal registers (the second half) are accessable for extra efficiency:
 
 | #  | Name           | Meaning                                        |
 | -- | -------------- | ---------------------------------------------- |
@@ -128,7 +132,7 @@ Like the Neva processor, I have kept the instruction encoding quite simple, the 
 | 3      | Overflow | Is set when a overflow occurs       |
 | 4 - 7  | Reseverd | \-                                  |
 | 8      | Halted   | When set halteds the processor      |
-| 9 - 31 | Reseverd | \-                                  |
+| 9 - 15 | Reseverd | \-                                  |
 
 <br/>
 
@@ -140,60 +144,58 @@ So the processor starts executing code at `0xffffffff00`
 
 ## Instructions
 
-| #  | Name    | Meaning                       | Operation                                                                 |
-| -- | ------- | ----------------------------- | ------------------------------------------------------------------------- |
-| 0  | nop     | no operation                  | \-                                                                        |
-|    |         |                               |                                                                           |
-| 1  | mov     | move                          | dest = data                                                               |
-| 2  | lw      | load word (32-bit)            | dest = \[data\]                                                           |
-| 3  | lhu     | load signed half (16-bit)     | dest = \[data\] & 0xffff (sign extended)                                  |
-| 4  | lhu     | load unsigned half (16-bit)   | dest = \[data\] & 0xffff                                                  |
-| 5  | lb      | load signed byte (8-bit)      | dest = \[data\] & 0xff (sign extended)                                    |
-| 6  | lbu     | load unsigned byte (8-bit)    | dest = \[data\] & 0xff                                                    |
-| 7  | sw      | store word (32-bit)           | \[data\] = dest                                                           |
-| 8  | sh      | store half (16-bit)           | \[data\] = dest & 0xffff                                                  |
-| 9  | sb      | store byte (8-bit)            | \[data\] = dest & 0xff                                                    |
-|    |         |                               |                                                                           |
-| 10 | add     | add                           | dest += data                                                              |
-| 11 | adc     | add with carry                | dest += data + carry                                                      |
-| 12 | sub     | subtract                      | dest -= data                                                              |
-| 13 | sbb     | subtract with borrow          | dest -= data + borrow                                                     |
-| 14 | neg     | negate                        | dest = -data                                                              |
-| 15 | cmp     | compare                       | dest - data (only set flags)                                              |
-|    |         |                               |                                                                           |
-| 16 | and     | and                           | dest &= data                                                              |
-| 17 | or      | or                            | dest |= data                                                              |
-| 18 | xor     | xor                           | dest ^= data                                                              |
-| 19 | not     | not                           | dest = ~data                                                              |
-| 20 | shl     | logical shift lift            | dest <<= data & 31                                                        |
-| 21 | shr     | logical shift right           | dest >>= data & 31                                                        |
-| 22 | sar     | arithmetic shift right        | dest >>>= data & 31                                                       |
-|    |         |                               |                                                                           |
-| 23 | push    | push                          | \[sp\] = data, sp -= 4                                                    |
-| 24 | pop     | pop                           | sp += 4, dest = \[sp\]                                                    |
-|    |         |                               |                                                                           |
-| 25 | jmp     | jump (relative when dest = 1) | rp = ip, ip (+)= data                                                     |
-| 26 | farjmp  | far jump                      | cs = dest, rp = ip, ip = data                                             |
-| 27 | call    | call (relative when dest = 1) | \[sp\] = ip, sp -= 4, rp = ip, ip (+)=data                                |
-| 28 | farcall | far call                      | \[sp\] = cs, sp -= 4, \[sp\] = ip, sp -= 4. cs = dest, rp = ip, ip = data |
-| 29 | ret     | return                        | sp += 4 + data, rp = ip, ip = \[sp\]                                      |
-| 30 | farret  | far return                    | sp += 4 + data, cs = \[sp\], sp += 4, rp = ip, ip = \[sp\]                |
-|    |         |                               |                                                                           |
-| 31 | cpuid   | CPU information               | \* see CPUID section                                                      |
+| #       | Name          | Meaning                    | Operation                                                                                     |
+| ------- | ------------- | -------------------------- | --------------------------------------------------------------------------------------------- |
+| 0       | nop           | no operation               | \-                                                                                            |
+|         |               |                            |                                                                                               |
+| 1       | mov           | move                       | dest = data                                                                                   |
+| 2       | lw            | load word (16-bit)         | dest = \[ds << 8 + data\]                                                                     |
+| 3       | lb            | load signed byte (8-bit)   | dest = \[ds << 8 + data\] & 0xff (sign extended)                                              |
+| 4       | lbu           | load unsigned byte (8-bit) | dest = \[ds << 8 + data\] & 0xff                                                              |
+| 5       | sw            | store word (16-bit)        | \[ds << 8 + data\] = dest                                                                     |
+| 6       | sb            | store byte (8-bit)         | \[ds << 8 + data\] = dest & 0xff                                                              |
+|         |               |                            |                                                                                               |
+| 7       | add           | add                        | dest += data                                                                                  |
+| 8       | adc           | add with carry             | dest += data + carry                                                                          |
+| 9       | sub           | subtract                   | dest -= data                                                                                  |
+| 10      | sbb           | subtract with borrow       | dest -= data + borrow                                                                         |
+| 11      | neg           | negate                     | dest = -data                                                                                  |
+| 12      | cmp           | compare                    | dest - data (only set flags)                                                                  |
+|         |               |                            |                                                                                               |
+| 13      | and           | and                        | dest &= data                                                                                  |
+| 14      | or            | or                         | dest |= data                                                                                  |
+| 15      | xor           | xor                        | dest ^= data                                                                                  |
+| 16      | not           | not                        | dest = ~data                                                                                  |
+| 17      | shl           | logical shift lift         | dest <<= data & 15                                                                            |
+| 18      | shr           | logical shift right        | dest >>= data & 15                                                                            |
+| 19      | sar           | arithmetic shift right     | dest >>>= data & 15                                                                           |
+|         |               |                            |                                                                                               |
+| 20      | push          | push                       | \[ss << 8 + sp\] = data, sp -= 2                                                              |
+| 21      | pop           | pop                        | sp += 2, dest = \[ss << 8 + sp\]                                                              |
+|         |               |                            |                                                                                               |
+| 22      | farjmp        | far jump                   | cs = dest, rp = ip, ip = data                                                                 |
+| 23      | call          | call                       | \[ss << 8 + sp\] = ip, sp -= 2, rp = ip, ip =data                                             |
+| 24      | call relative | call relative              | \[ss << 8 + sp\] = ip, sp -= 2, rp = ip, ip +=data                                            |
+| 25      | farcall       | far call                   | \[ss << 8 + sp\] = cs, sp -= 2, \[ss << 8 + sp\] = ip, sp -= 2. cs = dest, rp = ip, ip = data |
+| 26      | ret           | return                     | sp += 2+ data, rp = ip, ip = \[ss << 8 + sp\]                                                 |
+| 27      | farret        | far return                 | sp += 2, rp = ip, ip = \[ss << 8 + sp\], sp += 2 + data, cs = \[ss << 8 + sp\]                |
+|         |               |                            |                                                                                               |
+| 28      | cpuid         | CPU information            | \* see CPUID section                                                                          |
+|         |               |                            |                                                                                               |
+| 29 - 63 | Reserved      |                            |                                                                                               |
 
 <br/>
 
 ## CPUID instruction
-This instruction is used to fetch information about the processor and it will set these register:
+This instruction is used to fetch information about the processor and it will set these registers:
 
 ```
-a = BVDP ; Processor Manufacter name first 4 ascii bytes
-b = LAAT ; Processor Manufacter name last 4 ascii bytes
-c = KORA ; Processor name first 4 ascii bytes
-d = WEBX / SIMX / FPGA ; Processor name last 4 ascii bytes
-e = 0x0100 0000; Processor version first half '.' last half
-f = 0x00000000 ; Procesoor Manufacter Date
-g = 0b00000000 00000000 00000000 00000001 ; Processor features bit list
+b = 0x5634 ; Processor Manufacter id
+c = 0xd347 ; Processor id
+d = 0x01 00; Processor version first byte '.' last byte
+e = 0x0000 ; Procesoor Manufacter Date Low Unix Timestamp
+f = 0x0000 ; Procesoor Manufacter Date High Unix Timestamp
+g = 0b00000000 00000001 ; Processor features bit list
    ; 0 = Multiply / Division extention
    ; 1 = Software / hardware Interupt extention
    ; 8 = Taro video generator chip
