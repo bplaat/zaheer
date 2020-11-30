@@ -4,8 +4,6 @@ The processor has a classic CISC instruction which is inspired by the x86, 68000
 
 Made by [Bastiaan van der Plaat](https://bastiaan.ml/)
 
-<br/>
-
 ## Two different targets
 What is new is that I want to run the processor on two different platforms, namely:
 
@@ -15,8 +13,6 @@ What is new is that I want to run the processor on two different platforms, name
    - Modern (C) Kora Assembler
    - Native (Kora Assembly) Kora Assembler
 
-<br/>
-
 ## Pages that inspired this project
 - https://en.wikipedia.org/wiki/Intel_80386
 - https://en.wikipedia.org/wiki/ARM_architecture
@@ -25,14 +21,10 @@ What is new is that I want to run the processor on two different platforms, name
 - https://en.wikipedia.org/wiki/X86_instruction_listings
 - http://unixwiz.net/techtips/x86-jumps.html
 
-<br/>
-
 ## Complete computer design
 As I said, I want the kora processor to become a complete computer platform, which also includes peripheral equipment, eventually I want to keep this design for the complete computer:
 
 ![Kora computer design](docs/computer-design.png)
-
-<br/>
 
 ## The new things compared to the Neva processor
 - A new simple 16-bit design like the Neva processor
@@ -47,31 +39,22 @@ As I said, I want the kora processor to become a complete computer platform, whi
 - Some new instructions
 - An efficient instruction pipeline
 
-<br/>
-
 ## Some things I like to include in the future
 - A small instruction and data cache (like a Harvard design)
 - A hardware interupt system (for keyboard and vsync)
 - A multiply and division instruction extention
-
-<br/>
 
 ## Instruction pipeline
 The Kora processor has an efficient but may be difficult instruction pipeline design:
 
 ![Kora instruction pipeline](docs/instruction-pipeline.png)
 
-<br/>
-
 ## Instruction encoding
 Like the Neva processor, I have kept the instruction encoding quite simple, the mode value determines how the instruction is formed:
 
 ![Kora instruction encoding](docs/instruction-encoding.png)
 
-<br/>
-
 ## Registers
-
 The Kora processor has way more registers than the Neva processor, this ensures that code can better be optimized:
 
 <table>
@@ -104,9 +87,8 @@ The Kora processor has way more registers than the Neva processor, this ensures 
 <tr><td>17</td><td><code>r17</code>, <code>cs</code></td><td>Code segment register</td><td>-</td></tr>
 </table>
 
-<br/>
-
 ## Flags
+The kora processor has general flags and processor state flags:
 
 <table>
 <tr><th>#</th><th>Name</th><th>Meaning</th></tr>
@@ -124,10 +106,7 @@ The Kora processor has way more registers than the Neva processor, this ensures 
 <tr><td>9 - 15</td><td><i>Reserved</i></td><td>-</td></tr>
 </table>
 
-<br/>
-
 ## Conditions
-
 Unlike the Neva processor every instructions is conditional, this can benefit some assembly patterns:
 
 <table>
@@ -165,15 +144,12 @@ Unlike the Neva processor every instructions is conditional, this can benefit so
 <tr><td>15</td><td><code>-ng</code></td><td>Not greater</td><td><code>!zero || sign != overflow</code></td></tr>
 </table>
 
-<br/>
-
 ## Kora (re)starts jump address
 When Kora (re)starts the instruction pointer register is set to `0x0000` and the code segment register is set to `0xffff`
 So the processor starts executing code at `0xffffff00`
 
-<br/>
-
 ## Instructions
+The Kora processor has more general instructions then the Neva processor and is also very extendable:
 
 <table>
 <tr><th>#</th><th>Name</th><th>Meaning</th><th>Operation</th></tr>
@@ -194,10 +170,10 @@ So the processor starts executing code at `0xffffff00`
 
 <tr><td colspan="4"><i>Jump and call instructions:</i></td></tr>
 <tr><td>8</td><td><code>jmp</code></td><td>Jump and save instruction pointer</td><td><code>dest = ip, ip = data</code></td></tr>
-<tr><td>9</td><td><code>jmp (relative)</code></td><td>Jump relative and save instruction pointer</td><td><code>dest = ip, ip += data</code></td></tr>
+<tr><td>9</td><td><code>jmp (rel)</code></td><td>Jump relative and save instruction pointer</td><td><code>dest = ip, ip += data</code></td></tr>
 <tr><td>10</td><td><code>jmpf</code></td><td>Jump far</td><td><code>cs = dest, ip = data</code></td></tr>
 <tr><td>11</td><td><code>call</code></td><td>Call subroutine</td><td><code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip = data</code></td></tr>
-<tr><td>12</td><td><code>call (relative)</code></td><td>Call subroutine relative</td><td><code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip += data</code></td></tr>
+<tr><td>12</td><td><code>call (rel)</code></td><td>Call subroutine relative</td><td><code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip += data</code></td></tr>
 <tr><td>13</td><td><code>callf</code></td><td>Call far subroutine</td><td><code>[(ss &lt;&lt; 8) + sp] = cs, sp -= 2, cs = dest</code><br/>
    <code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip = data</code></td></tr>
 <tr><td>14</td><td><code>ret</code></td><td>Return from subroutine</td><td><code>ip = [(ss &lt;&lt; 8) + sp + 2], sp += 2 + data</code></td></tr>
@@ -232,9 +208,7 @@ So the processor starts executing code at `0xffffff00`
 <tr><td>31 - 61</td><td><i>Reserved</i></td><td>-</td><td>-</td></tr>
 </table>
 
-<br/>
-
-## CPUID instruction
+## The cpuid instruction
 This instruction is used to fetch information about the processor and it will set these registers:
 
 ```
