@@ -1,6 +1,6 @@
 # The Kora 16-bit Processor Project
 The Kora processor is a new processor based on the Neva processor, but extremely expanded and better in every way.
-The processor has a classic CISC instruction which is inspired by x86, 68000, ARM and RISC-V instruction sets.
+The processor has a classic CISC instruction which is inspired by the x86, 68000, ARM and RISC-V instruction sets.
 
 Made by [Bastiaan van der Plaat](https://bastiaan.ml/)
 
@@ -35,25 +35,31 @@ As I said, I want the kora processor to become a complete computer platform, whi
 <br/>
 
 ## The new things compared to the Neva processor
-- A new 16-bit simple design like the Neva processor
+- A new simple 16-bit design like the Neva processor
 - A 24-bit external segmented address bus so much more memory access (2 ** 24 = 16 MB)
-- But when all segments are zero you got just get a linair 16-bit address field to work
 - A 16-bit data bus interface with the memory
-- 6 more general purpose registers
+- 6 or 8 more general purpose registers
 - Taro video controller intergration
 - New segement based memory model vs difficult banking model
 - Variable instruction length encoding
 - All instructions are conditional
 - More flags and so conditions for instructions
-- New instructions
+- Some new instructions
+- An efficient instruction pipeline
 
 <br/>
 
 ## Some things I like to include in the future
 - A small instruction and data cache (like a Harvard design)
-- A small RISC like instruction pipeline
 - A hardware interupt system (for keyboard and vsync)
 - A multiply and division instruction extention
+
+<br/>
+
+## Instruction pipeline
+The Kora processor has an efficient but may be difficult instruction pipeline design:
+
+![Kora instruction pipeline](docs/instruction-pipeline.png)
 
 <br/>
 
@@ -64,125 +70,118 @@ Like the Neva processor, I have kept the instruction encoding quite simple, the 
 
 <br/>
 
-## Conditions
-
-Unlike the Neva processor every instructions is conditional, this can benefit some assembly patterns:
-
-| #  | Name | Meaning      | Condition                 |
-| -- | ---- | ------------ | ------------------------- |
-| 0  | \-   | Always       | true                      |
-| 1  | \-n  | Never        | false                     |
-|    |      |              |                           |
-| 2  | \-c  | Carry        | carry                     |
-| 3  | \-nc | Not carry    | !carry                    |
-|    |      |              |                           |
-| 4  | \-z  | Zero         | zero                      |
-| 5  | \-nz | Not zero     | !zero                     |
-|    |      |              |                           |
-| 6  | \-s  | Sign         | sign                      |
-| 7  | \-ns | Not sign     | !sign                     |
-|    |      |              |                           |
-| 8  | \-o  | Overflow     | overflow                  |
-| 9  | \-no | Not overflow | !overflow                 |
-|    |      |              |                           |
-| 10 | \-a  | Above        | !carry && !zero           |
-| 11 | \-na | Not above    | carry || zero             |
-|    |      |              |                           |
-| 12 | \-l  | Lesser       | sign != overflow          |
-| 13 | \-nl | Not lesser   | sign == overflow          |
-|    |      |              |                           |
-| 14 | \-g  | Greater      | zero && sign == overflow  |
-| 15 | \-ng | Not greater  | !zero || sign != overflow |
-
-<br/>
-
 ## Registers
 
-The Kora processor also has way more registers and all internal registers (the second half) are accessable for extra efficiency:
+The Kora processor has way more registers than the Neva processor, this ensures that code can better be optimized:
 
-| #  | Name           | Meaning                                        |
-| -- | -------------- | ---------------------------------------------- |
-| 0  | a, r0          | General purpose A register                     |
-| 1  | b, r1          | General purpose B register                     |
-| 2  | c, r2          | General purpose C register                     |
-| 3  | d, r3          | General purpose D register                     |
-| 4  | e, r4          | General purpose E register                     |
-| 5  | f, r5          | General purpose F register                     |
-| 6  | g, r6          | General purpose G register                     |
-| 7  | h, r7          | General purpose H register                     |
-|    |                |                                                |
-| 8  | ip, r8         | Instruction pointer register                   |
-| 9  | rp, r9         | Return / previous instruction pointer register |
-| 10 | sp, r10        | Stack pointer register                         |
-| 11 | bp, r11        | Stack base pointer register                    |
-| 12 | cs, r12        | Code segment register                          |
-| 13 | ds, r13        | Data segment register                          |
-| 14 | ss, r14        | Stacks segment register                        |
-| 15 | fx, flags, r15 | Flags register                                 |
+<table>
+
+<tr><th>#</th><th>Names</th><th>Meaning</th><th>Calling convetion</th></tr>
+
+<tr><td colspan="4"><i>General purpose registers:</i></td></tr>
+<tr><td>0</td><td><code>r0</code>, <code>a</code>, <code>t0</code></td><td>General purpose A register</td><td>Temporary variable 1</td></tr>
+<tr><td>1</td><td><code>r1</code>, <code>b</code>, <code>t1</code></td><td>General purpose B register</td><td>Temporary variable 2</td></tr>
+<tr><td>2</td><td><code>r2</code>, <code>c</code>, <code>t2</code></td><td>General purpose C register</td><td>Temporary variable 3</td></tr>
+<tr><td>3</td><td><code>r3</code>, <code>d</code>, <code>s0</code></td><td>General purpose D register</td><td>Saved variable 1</td></tr>
+<tr><td>4</td><td><code>r4</code>, <code>e</code>, <code>s1</code></td><td>General purpose E register</td><td>Saved variable 2</td></tr>
+<tr><td>5</td><td><code>r5</code>, <code>f</code>, <code>s2</code></td><td>General purpose F register</td><td>Saved variable 3</td></tr>
+<tr><td>6</td><td><code>r6</code>, <code>g</code>, <code>a0</code></td><td>General purpose G register</td><td>Function argument 1 / Return argument 1</td></tr>
+<tr><td>7</td><td><code>r7</code>, <code>h</code>, <code>a1</code></td><td>General purpose H register</td><td>Function argument 2 / Return argument 2</td></tr>
+<tr><td>8</td><td><code>r8</code>, <code>i</code>, <code>a2</code></td><td>General purpose I register</td><td>Function argument 3</td></tr>
+<tr><td>9</td><td><code>r9</code>, <code>j</code>, <code>a3</code></td><td>General purpose J register</td><td>Function argument 4</td></tr>
+<tr><td>10</td><td><code>r10</code>, <code>k</code>, <code>bp</code></td><td>General purpose K register</td><td>Stack base pointer</td></tr>
+<tr><td>11</td><td><code>r11</code>, <code>l</code>, <code>rp</code></td><td>General purpose L register</td><td>Return / previous instruction pointer</td></tr>
+<tr><td colspan="4"></td></tr>
+
+<tr><td colspan="4"><i>Processor used registers:</i></td></tr>
+<tr><td>12</td><td><code>r12</code>, <code>sp</code></td><td>Stack pointer register</td><td>-</td></tr>
+<tr><td>13</td><td><code>r13</code>, <code>ds</code></td><td>Data segment register</td><td>-</td></tr>
+<tr><td>14</td><td><code>r14</code>, <code>ss</code></td><td>Stack segment register</td><td>-</td></tr>
+<tr><td>15</td><td><code>r15</code>, <code>flags</code></td><td>Flags register</td><td>-</td></tr>
+<tr><td colspan="4"></td></tr>
+
+<tr><td colspan="4"><i>Unaccessible processor used registers:</i></td></tr>
+<tr><td>16</td><td><code>r16</code>, <code>ip</code></td><td>Instruction pointer register</td><td>-</td></tr>
+<tr><td>17</td><td><code>r17</code>, <code>cs</code></td><td>Code segment register</td><td>-</td></tr>
+
+</table>
 
 <br/>
 
 ## Flags
 
-| #      | Name     | Meaning                             |
-| ------ | -------- | ----------------------------------- |
-| 0      | Carry    | Is set when a carry overflow occurs |
-| 1      | Zero     | Is set when the result is zero      |
-| 2      | Sign     | Is set when the sign bit is set     |
-| 3      | Overflow | Is set when a overflow occurs       |
-| 4 - 7  | Reseverd | \-                                  |
-| 8      | Halted   | When set halteds the processor      |
-| 9 - 15 | Reseverd | \-                                  |
+<table>
+
+<tr><th>#</th><th>Name</th><th>Meaning</th></tr>
+
+<tr><td colspan="4"><i>General flags:</i></td></tr>
+<tr><td>0</td><td>Carry</td><td>Is set when a carry overflow occurs</td></tr>
+<tr><td>1</td><td>Zero</td><td>Is set when the result is zero</td></tr>
+<tr><td>2</td><td>Sign</td><td>Is set when the sign bit is set</td></tr>
+<tr><td>3</td><td>Overflow</td><td>Is set when a overflow occurs</td></tr>
+<tr><td>4 - 7</td><td><i>Reserved</i></td><td>-</td></tr>
+<tr><td colspan="4"></tr>
+
+<tr><td colspan="4"><i>Processor flags:</i></td></tr>
+<tr><td>8</td><td>Halt</td><td>When set halts the processor</td></tr>
+<tr><td>9 - 15</td><td><i>Reserved</i></td><td>-</td></tr>
+
+</table>
+
+<br/>
+
+## Conditions
+
+Unlike the Neva processor every instructions is conditional, this can benefit some assembly patterns:
+
+<table>
+
+<tr><th>#</th><th>Name</th><th>Meaning</th><th>Condition</th></tr>
+
+<tr><td>0</td><td><code>-</code></td><td>Always</td><td><code>true</code></tr>
+<tr><td>1</td><td><code>-n</code></td><td>Never</td><td><code>false</code></tr>
+<tr><td colspan="4"></tr>
+
+<tr><td>2</td><td><code>-c</code></td><td>Carry</td><td><code>carry</code></tr>
+<tr><td>3</td><td><code>-nc</code></td><td>Not carry</td><td><code>!carry</code></tr>
+<tr><td colspan="4"></tr>
+
+<tr><td>4</td><td><code>-z</code></td><td>Zero</td><td><code>zero</code></tr>
+<tr><td>5</td><td><code>-nz</code></td><td>Not zero</td><td><code>!zero</code></tr>
+<tr><td colspan="4"></tr>
+
+<tr><td>6</td><td><code>-s</code></td><td>Sign</td><td><code>sign</code></tr>
+<tr><td>7</td><td><code>-ns</code></td><td>Not sign</td><td><code>!sign</code></tr>
+<tr><td colspan="4"></tr>
+
+<tr><td>8</td><td><code>-o</code></td><td>Overflow</td><td><code>overflow</code></tr>
+<tr><td>9</td><td><code>-no</code></td><td>Not Overflow</td><td><code>!overflow</code></tr>
+<tr><td colspan="4"></tr>
+
+<tr><td>10</td><td><code>-a</code></td><td>Above</td><td><code>!carry && !zero</code></tr>
+<tr><td>11</td><td><code>-na</code></td><td>Not above</td><td><code>carry || zero</code></tr>
+<tr><td colspan="4"></tr>
+
+<tr><td>12</td><td><code>-l</code></td><td>Lesser</td><td><code>sign != overflow</code></tr>
+<tr><td>13</td><td><code>-nl</code></td><td>Not lesser</td><td><code>sign == overflow</code></tr>
+<tr><td colspan="4"></tr>
+
+<tr><td>14</td><td><code>-g</code></td><td>Greater</td><td><code>zero && sign == overflow</code></tr>
+<tr><td>15</td><td><code>-ng</code></td><td>Not greater</td><td><code>!zero || sign != overflow</code></tr>
+
+</table>
 
 <br/>
 
 ## Kora (re)starts jump address
-When Kora (re)starts the instruction pointer register is set to `0x00000000` and the code segment register is set to `0xffffffff`
-So the processor starts executing code at `0xffffffff00`
+When Kora (re)starts the instruction pointer register is set to `0x0000` and the code segment register is set to `0xffff`
+So the processor starts executing code at `0xffffff00`
 
 <br/>
 
 ## Instructions
 
-| #       | Name          | Meaning                    | Operation                                                                                     |
-| ------- | ------------- | -------------------------- | --------------------------------------------------------------------------------------------- |
-| 0       | nop           | no operation               | \-                                                                                            |
-|         |               |                            |                                                                                               |
-| 1       | mov           | move                       | dest = data                                                                                   |
-| 2       | lw            | load word (16-bit)         | dest = \[ds << 8 + data\]                                                                     |
-| 3       | lb            | load signed byte (8-bit)   | dest = \[ds << 8 + data\] & 0xff (sign extended)                                              |
-| 4       | lbu           | load unsigned byte (8-bit) | dest = \[ds << 8 + data\] & 0xff                                                              |
-| 5       | sw            | store word (16-bit)        | \[ds << 8 + data\] = dest                                                                     |
-| 6       | sb            | store byte (8-bit)         | \[ds << 8 + data\] = dest & 0xff                                                              |
-|         |               |                            |                                                                                               |
-| 7       | add           | add                        | dest += data                                                                                  |
-| 8       | adc           | add with carry             | dest += data + carry                                                                          |
-| 9       | sub           | subtract                   | dest -= data                                                                                  |
-| 10      | sbb           | subtract with borrow       | dest -= data + borrow                                                                         |
-| 11      | neg           | negate                     | dest = -data                                                                                  |
-| 12      | cmp           | compare                    | dest - data (only set flags)                                                                  |
-|         |               |                            |                                                                                               |
-| 13      | and           | and                        | dest &= data                                                                                  |
-| 14      | or            | or                         | dest |= data                                                                                  |
-| 15      | xor           | xor                        | dest ^= data                                                                                  |
-| 16      | not           | not                        | dest = ~data                                                                                  |
-| 17      | shl           | logical shift lift         | dest <<= data & 15                                                                            |
-| 18      | shr           | logical shift right        | dest >>= data & 15                                                                            |
-| 19      | sar           | arithmetic shift right     | dest >>>= data & 15                                                                           |
-|         |               |                            |                                                                                               |
-| 20      | push          | push                       | \[ss << 8 + sp\] = data, sp -= 2                                                              |
-| 21      | pop           | pop                        | sp += 2, dest = \[ss << 8 + sp\]                                                              |
-|         |               |                            |                                                                                               |
-| 22      | farjmp        | far jump                   | cs = dest, rp = ip, ip = data                                                                 |
-| 23      | call          | call                       | \[ss << 8 + sp\] = ip, sp -= 2, rp = ip, ip =data                                             |
-| 24      | call relative | call relative              | \[ss << 8 + sp\] = ip, sp -= 2, rp = ip, ip +=data                                            |
-| 25      | farcall       | far call                   | \[ss << 8 + sp\] = cs, sp -= 2, \[ss << 8 + sp\] = ip, sp -= 2. cs = dest, rp = ip, ip = data |
-| 26      | ret           | return                     | sp += 2+ data, rp = ip, ip = \[ss << 8 + sp\]                                                 |
-| 27      | farret        | far return                 | sp += 2, rp = ip, ip = \[ss << 8 + sp\], sp += 2 + data, cs = \[ss << 8 + sp\]                |
-|         |               |                            |                                                                                               |
-| 28      | cpuid         | CPU information            | \* see CPUID section                                                                          |
-|         |               |                            |                                                                                               |
-| 29 - 63 | Reserved      |                            |                                                                                               |
+Comming soon...
 
 <br/>
 
@@ -190,16 +189,18 @@ So the processor starts executing code at `0xffffffff00`
 This instruction is used to fetch information about the processor and it will set these registers:
 
 ```
-b = 0x5634 ; Processor Manufacter id
-c = 0xd347 ; Processor id
-d = 0x01 00; Processor version first byte '.' last byte
-e = 0x0000 ; Procesoor Manufacter Date Low Unix Timestamp
-f = 0x0000 ; Procesoor Manufacter Date High Unix Timestamp
-g = 0b00000000 00000001 ; Processor features bit list
+a0 = 0x2807 ; Processor Manufacter id
+   ; 0x2807 = Bastiaan van der Plaat
+a1 = 0xB0EF ; Processor id
+   ; 0xB0EF = Kora Processor
+a2 = 0x00 01; Processor version first byte '.' last byte
+a3 = 0b00000000 00000001 ; Processor features bit list
    ; 0 = Multiply / Division extention
    ; 1 = Software / hardware Interupt extention
    ; 8 = Taro video generator chip
    ; 9 = Kiki PS/2 keyboard interface chip
    ; 10 = SD card storage device?? (need I2C, SPI)
    ; Etc...
+t1 = 0x0000 ; Processor Manufacter Date Low Unix Timestamp
+t2 = 0x0000 ; Processor Manufacter Date High Unix Timestamp
 ```
