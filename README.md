@@ -170,10 +170,10 @@ The Kora processor has more general instructions then the Neva processor and is 
 
 <tr><td colspan="4"><i>Jump and call instructions:</i></td></tr>
 <tr><td>8</td><td><code>jmp</code></td><td>Jump and save instruction pointer</td><td><code>dest = ip, ip = data</code></td></tr>
-<tr><td>9</td><td><code>jmp (relative)</code></td><td>Jump relative and save instruction pointer</td><td><code>dest = ip, ip += data</code></td></tr>
+<tr><td>9</td><td><code>jmp</code> (relative)</td><td>Jump relative and save instruction pointer</td><td><code>dest = ip, ip += data</code></td></tr>
 <tr><td>10</td><td><code>jmpf</code></td><td>Jump far</td><td><code>cs = dest, ip = data</code></td></tr>
 <tr><td>11</td><td><code>call</code></td><td>Call subroutine</td><td><code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip = data</code></td></tr>
-<tr><td>12</td><td><code>call (relative)</code></td><td>Call subroutine relative</td><td><code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip += data</code></td></tr>
+<tr><td>12</td><td><code>call</code> (relative)</td><td>Call subroutine relative</td><td><code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip += data</code></td></tr>
 <tr><td>13</td><td><code>callf</code></td><td>Call far subroutine</td><td><code>[(ss &lt;&lt; 8) + sp] = cs, sp -= 2, cs = dest</code><br/>
    <code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip = data</code></td></tr>
 <tr><td>14</td><td><code>ret</code></td><td>Return from subroutine</td><td><code>ip = [(ss &lt;&lt; 8) + sp + 2], sp += 2 + data</code></td></tr>
