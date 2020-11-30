@@ -98,11 +98,15 @@ The kora processor has general flags and processor state flags:
 <tr><td>1</td><td>Zero</td><td>Is set when the result is zero</td></tr>
 <tr><td>2</td><td>Sign</td><td>Is set when the sign bit is set</td></tr>
 <tr><td>3</td><td>Overflow</td><td>Is set when a overflow occurs</td></tr>
+<tr><td colspan="4"></td></tr>
+
 <tr><td>4/7</td><td><i>Reserved</i></td><td>-</td></tr>
 <tr><td colspan="4"></td></tr>
 
 <tr><td colspan="4"><i>Processor flags:</i></td></tr>
 <tr><td>8</td><td>Halt</td><td>When set halts the processor</td></tr>
+<tr><td colspan="4"></td></tr>
+
 <tr><td>9/15</td><td><i>Reserved</i></td><td>-</td></tr>
 </table>
 
