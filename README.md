@@ -75,7 +75,6 @@ Like the Neva processor, I have kept the instruction encoding quite simple, the 
 The Kora processor has way more registers than the Neva processor, this ensures that code can better be optimized:
 
 <table>
-
 <tr><th>#</th><th>Names</th><th>Meaning</th><th>Calling convetion</th></tr>
 
 <tr><td colspan="4"><i>General purpose registers:</i></td></tr>
@@ -103,7 +102,6 @@ The Kora processor has way more registers than the Neva processor, this ensures 
 <tr><td colspan="4"><i>Unaccessible processor used registers:</i></td></tr>
 <tr><td>16</td><td><code>r16</code>, <code>ip</code></td><td>Instruction pointer register</td><td>-</td></tr>
 <tr><td>17</td><td><code>r17</code>, <code>cs</code></td><td>Code segment register</td><td>-</td></tr>
-
 </table>
 
 <br/>
@@ -111,7 +109,6 @@ The Kora processor has way more registers than the Neva processor, this ensures 
 ## Flags
 
 <table>
-
 <tr><th>#</th><th>Name</th><th>Meaning</th></tr>
 
 <tr><td colspan="4"><i>General flags:</i></td></tr>
@@ -120,12 +117,11 @@ The Kora processor has way more registers than the Neva processor, this ensures 
 <tr><td>2</td><td>Sign</td><td>Is set when the sign bit is set</td></tr>
 <tr><td>3</td><td>Overflow</td><td>Is set when a overflow occurs</td></tr>
 <tr><td>4 - 7</td><td><i>Reserved</i></td><td>-</td></tr>
-<tr><td colspan="4"></tr>
+<tr><td colspan="4"></td></tr>
 
 <tr><td colspan="4"><i>Processor flags:</i></td></tr>
 <tr><td>8</td><td>Halt</td><td>When set halts the processor</td></tr>
 <tr><td>9 - 15</td><td><i>Reserved</i></td><td>-</td></tr>
-
 </table>
 
 <br/>
@@ -135,40 +131,38 @@ The Kora processor has way more registers than the Neva processor, this ensures 
 Unlike the Neva processor every instructions is conditional, this can benefit some assembly patterns:
 
 <table>
-
 <tr><th>#</th><th>Name</th><th>Meaning</th><th>Condition</th></tr>
 
-<tr><td>0</td><td><code>-</code></td><td>Always</td><td><code>true</code></tr>
-<tr><td>1</td><td><code>-n</code></td><td>Never</td><td><code>false</code></tr>
-<tr><td colspan="4"></tr>
+<tr><td>0</td><td><code>-</code></td><td>Always</td><td><code>true</code></td></tr>
+<tr><td>1</td><td><code>-n</code></td><td>Never</td><td><code>false</code></td></tr>
+<tr><td colspan="4"></td></tr>
 
-<tr><td>2</td><td><code>-c</code></td><td>Carry</td><td><code>carry</code></tr>
-<tr><td>3</td><td><code>-nc</code></td><td>Not carry</td><td><code>!carry</code></tr>
-<tr><td colspan="4"></tr>
+<tr><td>2</td><td><code>-c</code></td><td>Carry</td><td><code>carry</code></td></tr>
+<tr><td>3</td><td><code>-nc</code></td><td>Not carry</td><td><code>!carry</code></td></tr>
+<tr><td colspan="4"></td></tr>
 
-<tr><td>4</td><td><code>-z</code></td><td>Zero</td><td><code>zero</code></tr>
-<tr><td>5</td><td><code>-nz</code></td><td>Not zero</td><td><code>!zero</code></tr>
-<tr><td colspan="4"></tr>
+<tr><td>4</td><td><code>-z</code></td><td>Zero</td><td><code>zero</code></td></tr>
+<tr><td>5</td><td><code>-nz</code></td><td>Not zero</td><td><code>!zero</code></td></tr>
+<tr><td colspan="4"></td></tr>
 
-<tr><td>6</td><td><code>-s</code></td><td>Sign</td><td><code>sign</code></tr>
-<tr><td>7</td><td><code>-ns</code></td><td>Not sign</td><td><code>!sign</code></tr>
-<tr><td colspan="4"></tr>
+<tr><td>6</td><td><code>-s</code></td><td>Sign</td><td><code>sign</code></td></tr>
+<tr><td>7</td><td><code>-ns</code></td><td>Not sign</td><td><code>!sign</code></td></tr>
+<tr><td colspan="4"></td></tr>
 
-<tr><td>8</td><td><code>-o</code></td><td>Overflow</td><td><code>overflow</code></tr>
-<tr><td>9</td><td><code>-no</code></td><td>Not Overflow</td><td><code>!overflow</code></tr>
-<tr><td colspan="4"></tr>
+<tr><td>8</td><td><code>-o</code></td><td>Overflow</td><td><code>overflow</code></td></tr>
+<tr><td>9</td><td><code>-no</code></td><td>Not Overflow</td><td><code>!overflow</code></td></tr>
+<tr><td colspan="4"></td></tr>
 
-<tr><td>10</td><td><code>-a</code></td><td>Above</td><td><code>!carry && !zero</code></tr>
-<tr><td>11</td><td><code>-na</code></td><td>Not above</td><td><code>carry || zero</code></tr>
-<tr><td colspan="4"></tr>
+<tr><td>10</td><td><code>-a</code></td><td>Above</td><td><code>!carry &amp;&amp; !zero</code></td></tr>
+<tr><td>11</td><td><code>-na</code></td><td>Not above</td><td><code>carry || zero</code></td></tr>
+<tr><td colspan="4"></td></tr>
 
-<tr><td>12</td><td><code>-l</code></td><td>Lesser</td><td><code>sign != overflow</code></tr>
-<tr><td>13</td><td><code>-nl</code></td><td>Not lesser</td><td><code>sign == overflow</code></tr>
-<tr><td colspan="4"></tr>
+<tr><td>12</td><td><code>-l</code></td><td>Lesser</td><td><code>sign != overflow</code></td></tr>
+<tr><td>13</td><td><code>-nl</code></td><td>Not lesser</td><td><code>sign == overflow</code></td></tr>
+<tr><td colspan="4"></td></tr>
 
-<tr><td>14</td><td><code>-g</code></td><td>Greater</td><td><code>zero && sign == overflow</code></tr>
-<tr><td>15</td><td><code>-ng</code></td><td>Not greater</td><td><code>!zero || sign != overflow</code></tr>
-
+<tr><td>14</td><td><code>-g</code></td><td>Greater</td><td><code>zero &amp;&amp; sign == overflow</code></td></tr>
+<tr><td>15</td><td><code>-ng</code></td><td>Not greater</td><td><code>!zero || sign != overflow</code></td></tr>
 </table>
 
 <br/>
@@ -181,7 +175,62 @@ So the processor starts executing code at `0xffffff00`
 
 ## Instructions
 
-Comming soon...
+<table>
+<tr><th>#</th><th>Name</th><th>Meaning</th><th>Operation</th></tr>
+
+<tr><td colspan="4"><i>Special instructions:</i></td></tr>
+<tr><td>0</td><td><code>nop</code></td><td>No operation</td><td>-</td></tr>
+<tr><td>1</td><td><code>cpuid</code></td><td>Get processor information</td><td>* See cpuid section</td></tr>
+<tr><td colspan="4"></td></tr>
+
+<tr><td colspan="4"><i>Move, load and store instructions:</i></td></tr>
+<tr><td>2</td><td><code>mov</code></td><td>Move data</td><td><code>dest = data</code></td></tr>
+<tr><td>3</td><td><code>lw</code></td><td>Load word (16-bit) from memory</td><td><code>dest = [(ds &lt;&lt; 8) + data]</code></td></tr>
+<tr><td>4</td><td><code>lb</code></td><td>Load signed byte (8-bit) from memory</td><td><code>dest = [(ds &lt;&lt; 8) + data] &amp; 0xff (sign extended)</code></td></tr>
+<tr><td>5</td><td><code>lbu</code></td><td>Load byte (8-bit) from memory</td><td><code>dest = [(ds &lt;&lt; 8) + data] &amp; 0xff</code></td></tr>
+<tr><td>6</td><td><code>sw</code></td><td>Store word (16-bit) to memory</td><td><code>[(ds &lt;&lt; 8) + data] = dest</code></td></tr>
+<tr><td>7</td><td><code>sb</code></td><td>Store word (8-bit) to memory</td><td><code>[(ds &lt;&lt; 8) + data] = dest &amp; 0xff</code></td></tr>
+<tr><td colspan="4"></td></tr>
+
+<tr><td colspan="4"><i>Jump and call instructions:</i></td></tr>
+<tr><td>8</td><td><code>jmp</code></td><td>Jump and save instruction pointer</td><td><code>dest = ip, ip = data</code></td></tr>
+<tr><td>9</td><td><code>jmp (relative)</code></td><td>Jump relative and save instruction pointer</td><td><code>dest = ip, ip += data</code></td></tr>
+<tr><td>10</td><td><code>jmpf</code></td><td>Jump far</td><td><code>cs = dest, ip = data</code></td></tr>
+<tr><td>11</td><td><code>call</code></td><td>Call subroutine</td><td><code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip = data</code></td></tr>
+<tr><td>12</td><td><code>call (relative)</code></td><td>Call subroutine relative</td><td><code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip += data</code></td></tr>
+<tr><td>13</td><td><code>callf</code></td><td>Call far subroutine</td><td><code>[(ss &lt;&lt; 8) + sp] = cs, sp -= 2, cs = dest</code><br/>
+   <code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip = data</code></td></tr>
+<tr><td>14</td><td><code>ret</code></td><td>Return from subroutine</td><td><code>ip = [(ss &lt;&lt; 8) + sp + 2], sp += 2 + data</code></td></tr>
+<tr><td>15</td><td><code>retf</code></td><td>Return from far subroutine</td><td><code>ip = [(ss &lt;&lt; 8) + sp + 2], sp += 2</code><br/>
+   <code>cs = [(ss &lt;&lt; 8) + sp + 2], sp += 2 + data</code></td></tr>
+<tr><td colspan="4"></td></tr>
+
+<tr><td colspan="4"><i>Arithmetic instructions:</i></td></tr>
+<tr><td>16</td><td><code>add</code></td><td>Add</td><td><code>dest += data</code></td></tr>
+<tr><td>17</td><td><code>adc</code></td><td>Add with carry</td><td><code>dest += data + carry</code></td></tr>
+<tr><td>18</td><td><code>sub</code></td><td>Subtract</td><td><code>dest -= data</code></td></tr>
+<tr><td>19</td><td><code>sbb</code></td><td>Subtract with borrow</td><td><code>dest -= data + borrow</code></td></tr>
+<tr><td>20</td><td><code>neg</code></td><td>Negate</td><td><code>dest = -data</code></td></tr>
+<tr><td>21</td><td><code>cmp</code></td><td>Compare</td><td><code>dest - data (only set flags)</code></td></tr>
+<tr><td colspan="4"></td></tr>
+
+<tr><td colspan="4"><i>Bitwise instructions:</i></td></tr>
+<tr><td>22</td><td><code>and</code></td><td>And</td><td><code>dest &amp;= data</code></td></tr>
+<tr><td>23</td><td><code>or</code></td><td>Or</td><td><code>dest |= data</code></td></tr>
+<tr><td>24</td><td><code>xor</code></td><td>Xor</td><td><code>dest ^= data</code></td></tr>
+<tr><td>25</td><td><code>not</code></td><td>Not</td><td><code>dest = ~data</code></td></tr>
+<tr><td>26</td><td><code>shl</code></td><td>Logical shift left</td><td><code>dest &lt;&lt;= data &amp; 15</code></td></tr>
+<tr><td>27</td><td><code>shr</code></td><td>Logical shift right</td><td><code>dest &gt;&gt;= data &amp; 15</code></td></tr>
+<tr><td>28</td><td><code>sar</code></td><td>Arithmetic shift right</td><td><code>dest &gt;&gt;&gt;= data &amp; 15</code></td></tr>
+<tr><td colspan="4"></td></tr>
+
+<tr><td colspan="4"><i>Stack instructions:</i></td></tr>
+<tr><td>29</td><td><code>push</code></td><td>Push word (16-bit) on the stack</td><td><code>[(ss &lt;&lt; 8) + sp] = data, sp -= 2</code></td></tr>
+<tr><td>30</td><td><code>pop</code></td><td>Pop word (16-bit) of the stack</td><td><code>dest = [(ss &lt;&lt; 8) + sp + 2], sp += 2</code></td></tr>
+<tr><td colspan="4"></td></tr>
+
+<tr><td>31 - 61</td><td><i>Reserved</i></td><td>-</td><td>-</td></tr>
+</table>
 
 <br/>
 
