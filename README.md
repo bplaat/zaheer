@@ -76,9 +76,9 @@ The Kora processor has way more registers than the Neva processor, this ensures 
 <tr><td colspan="4"></td></tr>
 
 <tr><td colspan="4"><i>Processor used registers:</i></td></tr>
-<tr><td>12</td><td><code>r12</code>, <code>sp</code></td><td>Stack pointer register</td><td>-</td></tr>
-<tr><td>13</td><td><code>r13</code>, <code>ds</code></td><td>Data segment register</td><td>-</td></tr>
-<tr><td>14</td><td><code>r14</code>, <code>ss</code></td><td>Stack segment register</td><td>-</td></tr>
+<tr><td>12</td><td><code>r12</code>, <code>ds</code></td><td>Data segment register</td><td>-</td></tr>
+<tr><td>13</td><td><code>r13</code>, <code>ss</code></td><td>Stack segment register</td><td>-</td></tr>
+<tr><td>14</td><td><code>r14</code>, <code>sp</code></td><td>Stack pointer register</td><td>-</td></tr>
 <tr><td>15</td><td><code>r15</code>, <code>flags</code></td><td>Flags register</td><td>-</td></tr>
 <tr><td colspan="4"></td></tr>
 
