@@ -1,6 +1,6 @@
 # The Kora 16-bit Processor Project
 The Kora processor is a new processor based on the Neva processor, but extremely expanded and better in every way.
-The processor has a classic CISC instruction which is inspired by the x86, 68000, ARM and RISC-V instruction sets.
+The processor has a classic CISC instruction with some RISC features which is inspired by the x86, 68000, ARM and RISC-V instruction sets.
 
 Made by [Bastiaan van der Plaat](https://bastiaan.ml/)
 
@@ -14,7 +14,7 @@ What is new is that I want to run the processor on two different platforms, name
    - Native (Kora Assembly) Kora Assembler
 
 ## Pages that inspired this project
-- https://en.wikipedia.org/wiki/Intel_80386
+- https://en.wikipedia.org/wiki/Intel_8086
 - https://en.wikipedia.org/wiki/ARM_architecture
 - https://en.wikipedia.org/wiki/Motorola_68000
 - https://en.wikipedia.org/wiki/RISC-V
@@ -114,38 +114,38 @@ The kora processor has general flags and processor state flags:
 Unlike the Neva processor every instructions is conditional, this can benefit some assembly patterns:
 
 <table>
-<tr><th>#</th><th>Name</th><th>Meaning</th><th>Condition</th></tr>
+<tr><th>#</th><th>Name</th><th>Meaning</th><th>Other names</th><th>Condition</th></tr>
 
-<tr><td>0</td><td><code>-</code></td><td>Always</td><td><code>true</code></td></tr>
-<tr><td>1</td><td><code>-n</code></td><td>Never</td><td><code>false</code></td></tr>
-<tr><td colspan="4"></td></tr>
+<tr><td>0</td><td><code>-</code></td><td>Always</td><td>-</td><td><code>true</code></td></tr>
+<tr><td>1</td><td><code>-n</code></td><td>Never</td><td>-</td><td><code>false</code></td></tr>
+<tr><td colspan="5"></td></tr>
 
-<tr><td>2</td><td><code>-c</code></td><td>Carry</td><td><code>carry</code></td></tr>
-<tr><td>3</td><td><code>-nc</code></td><td>Not carry</td><td><code>!carry</code></td></tr>
-<tr><td colspan="4"></td></tr>
+<tr><td>2</td><td><code>-c</code></td><td>Carry</td><td><code>-b</code> Below (unsigned)<br/><code>-nae</code> Not above or equal (unsigned)</td><td><code>carry</code></td></tr>
+<tr><td>3</td><td><code>-nc</code></td><td>Not carry</td><td><code>-nb</code> Not below (unsigned)<br/><code>-ae</code> Above or equal (unsigned)</td><td><code>!carry</code></td></tr>
+<tr><td colspan="5"></td></tr>
 
-<tr><td>4</td><td><code>-z</code></td><td>Zero</td><td><code>zero</code></td></tr>
-<tr><td>5</td><td><code>-nz</code></td><td>Not zero</td><td><code>!zero</code></td></tr>
-<tr><td colspan="4"></td></tr>
+<tr><td>4</td><td><code>-z</code></td><td>Zero</td><td><code>-e</code> Equal</td><td><code>zero</code></td></tr>
+<tr><td>5</td><td><code>-nz</code></td><td>Not zero</td><td><code>-ne</code> Not equal</td><td><code>!zero</code></td></tr>
+<tr><td colspan="5"></td></tr>
 
-<tr><td>6</td><td><code>-s</code></td><td>Sign</td><td><code>sign</code></td></tr>
-<tr><td>7</td><td><code>-ns</code></td><td>Not sign</td><td><code>!sign</code></td></tr>
-<tr><td colspan="4"></td></tr>
+<tr><td>6</td><td><code>-s</code></td><td>Sign</td><td>-</td><td><code>sign</code></td></tr>
+<tr><td>7</td><td><code>-ns</code></td><td>Not sign</td><td>-</td><td><code>!sign</code></td></tr>
+<tr><td colspan="5"></td></tr>
 
-<tr><td>8</td><td><code>-o</code></td><td>Overflow</td><td><code>overflow</code></td></tr>
-<tr><td>9</td><td><code>-no</code></td><td>Not Overflow</td><td><code>!overflow</code></td></tr>
-<tr><td colspan="4"></td></tr>
+<tr><td>8</td><td><code>-o</code></td><td>Overflow</td><td>-</td><td><code>overflow</code></td></tr>
+<tr><td>9</td><td><code>-no</code></td><td>Not Overflow</td><td>-</td><td><code>!overflow</code></td></tr>
+<tr><td colspan="5"></td></tr>
 
-<tr><td>10</td><td><code>-a</code></td><td>Above</td><td><code>!carry &amp;&amp; !zero</code></td></tr>
-<tr><td>11</td><td><code>-na</code></td><td>Not above</td><td><code>carry || zero</code></td></tr>
-<tr><td colspan="4"></td></tr>
+<tr><td>10</td><td><code>-a</code></td><td>Above</td><td><code>-nbe</code> Not below or equal (unsigned)</td><td><code>!carry &amp;&amp; !zero</code></td></tr>
+<tr><td>11</td><td><code>-na</code></td><td>Not above</td><td><code>-be</code> Below or equal (unsigned)</td><td><code>carry || zero</code></td></tr>
+<tr><td colspan="5"></td></tr>
 
-<tr><td>12</td><td><code>-l</code></td><td>Lesser</td><td><code>sign != overflow</code></td></tr>
-<tr><td>13</td><td><code>-nl</code></td><td>Not lesser</td><td><code>sign == overflow</code></td></tr>
-<tr><td colspan="4"></td></tr>
+<tr><td>12</td><td><code>-l</code></td><td>Lesser</td><td><code>-nge</code> Not greater or equal (signed)</td><td><code>sign != overflow</code></td></tr>
+<tr><td>13</td><td><code>-nl</code></td><td>Not lesser</td><td><code>-ge</code> Greater or equal (signed)</td><td><code>sign == overflow</code></td></tr>
+<tr><td colspan="5"></td></tr>
 
-<tr><td>14</td><td><code>-g</code></td><td>Greater</td><td><code>zero &amp;&amp; sign == overflow</code></td></tr>
-<tr><td>15</td><td><code>-ng</code></td><td>Not greater</td><td><code>!zero || sign != overflow</code></td></tr>
+<tr><td>14</td><td><code>-g</code></td><td>Greater</td><td><code>-nle</code> Not lesser or equal (signed)</td><td><code>zero &amp;&amp; sign == overflow</code></td></tr>
+<tr><td>15</td><td><code>-ng</code></td><td>Not greater</td><td><code>-le</code> Lesser or equal (signed)</td><td><code>!zero || sign != overflow</code></td></tr>
 </table>
 
 ## Kora (re)starts jump address
@@ -158,12 +158,12 @@ The Kora processor has more general instructions then the Neva processor and is 
 <table>
 <tr><th>#</th><th>Name</th><th>Meaning</th><th>Operation</th></tr>
 
-<tr><td colspan="4"><i>Special instructions:</i></td></tr>
+<tr><td colspan="4"><i>Special instructions (2):</i></td></tr>
 <tr><td>0</td><td><code>nop</code></td><td>No operation</td><td>-</td></tr>
 <tr><td>1</td><td><code>cpuid</code></td><td>Get processor information</td><td>* See cpuid section</td></tr>
 <tr><td colspan="4"></td></tr>
 
-<tr><td colspan="4"><i>Move, load and store instructions:</i></td></tr>
+<tr><td colspan="4"><i>Move, load and store instructions (6):</i></td></tr>
 <tr><td>2</td><td><code>mov</code></td><td>Move data</td><td><code>dest = data</code></td></tr>
 <tr><td>3</td><td><code>lw</code></td><td>Load word (16-bit) from memory</td><td><code>dest = [(ds &lt;&lt; 8) + data]</code></td></tr>
 <tr><td>4</td><td><code>lb</code></td><td>Load signed byte (8-bit) from memory</td><td><code>dest = [(ds &lt;&lt; 8) + data] &amp; 0xff (sign extended)</code></td></tr>
@@ -172,12 +172,12 @@ The Kora processor has more general instructions then the Neva processor and is 
 <tr><td>7</td><td><code>sb</code></td><td>Store word (8-bit) to memory</td><td><code>[(ds &lt;&lt; 8) + data] = dest &amp; 0xff</code></td></tr>
 <tr><td colspan="4"></td></tr>
 
-<tr><td colspan="4"><i>Jump and call instructions:</i></td></tr>
+<tr><td colspan="4"><i>Jump and call instructions (8):</i></td></tr>
 <tr><td>8</td><td><code>jmp</code></td><td>Jump and save instruction pointer</td><td><code>dest = ip, ip = data</code></td></tr>
 <tr><td>9</td><td><code>jmp</code> (relative)</td><td>Jump relative and save instruction pointer</td><td><code>dest = ip, ip += data</code></td></tr>
 <tr><td>10</td><td><code>jmpf</code></td><td>Jump far</td><td><code>cs = dest, ip = data</code></td></tr>
 <tr><td>11</td><td><code>call</code></td><td>Call subroutine</td><td><code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip = data</code></td></tr>
-<tr><td>12</td><td><code>call</code> (relative)</td><td>Call subroutine relative</td><td><code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip += data</code></td></tr>
+<tr><td>12</td><td><code>call</code> (relative)</td><td>Call relative subroutine</td><td><code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip += data</code></td></tr>
 <tr><td>13</td><td><code>callf</code></td><td>Call far subroutine</td><td><code>[(ss &lt;&lt; 8) + sp] = cs, sp -= 2, cs = dest</code><br/>
    <code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip = data</code></td></tr>
 <tr><td>14</td><td><code>ret</code></td><td>Return from subroutine</td><td><code>ip = [(ss &lt;&lt; 8) + sp + 2], sp += 2 + data</code></td></tr>
@@ -185,7 +185,7 @@ The Kora processor has more general instructions then the Neva processor and is 
    <code>cs = [(ss &lt;&lt; 8) + sp + 2], sp += 2 + data</code></td></tr>
 <tr><td colspan="4"></td></tr>
 
-<tr><td colspan="4"><i>Arithmetic instructions:</i></td></tr>
+<tr><td colspan="4"><i>Arithmetic instructions (6):</i></td></tr>
 <tr><td>16</td><td><code>add</code></td><td>Add</td><td><code>dest += data</code></td></tr>
 <tr><td>17</td><td><code>adc</code></td><td>Add with carry</td><td><code>dest += data + carry</code></td></tr>
 <tr><td>18</td><td><code>sub</code></td><td>Subtract</td><td><code>dest -= data</code></td></tr>
@@ -194,22 +194,23 @@ The Kora processor has more general instructions then the Neva processor and is 
 <tr><td>21</td><td><code>cmp</code></td><td>Compare</td><td><code>dest - data (only set flags)</code></td></tr>
 <tr><td colspan="4"></td></tr>
 
-<tr><td colspan="4"><i>Bitwise instructions:</i></td></tr>
+<tr><td colspan="4"><i>Bitwise instructions (8):</i></td></tr>
 <tr><td>22</td><td><code>and</code></td><td>And</td><td><code>dest &amp;= data</code></td></tr>
 <tr><td>23</td><td><code>or</code></td><td>Or</td><td><code>dest |= data</code></td></tr>
 <tr><td>24</td><td><code>xor</code></td><td>Xor</td><td><code>dest ^= data</code></td></tr>
 <tr><td>25</td><td><code>not</code></td><td>Not</td><td><code>dest = ~data</code></td></tr>
-<tr><td>26</td><td><code>shl</code></td><td>Logical shift left</td><td><code>dest &lt;&lt;= data &amp; 15</code></td></tr>
-<tr><td>27</td><td><code>shr</code></td><td>Logical shift right</td><td><code>dest &gt;&gt;= data &amp; 15</code></td></tr>
-<tr><td>28</td><td><code>sar</code></td><td>Arithmetic shift right</td><td><code>dest &gt;&gt;&gt;= data &amp; 15</code></td></tr>
+<tr><td>26</td><td><code>test</code></td><td>Logical compare (And)</td><td><code>dest &amp; data (only set flags)</code></td></tr>
+<tr><td>27</td><td><code>shl</code></td><td>Logical shift left</td><td><code>dest &lt;&lt;= data &amp; 15</code></td></tr>
+<tr><td>28</td><td><code>shr</code></td><td>Logical shift right</td><td><code>dest &gt;&gt;= data &amp; 15</code></td></tr>
+<tr><td>29</td><td><code>sar</code></td><td>Arithmetic shift right</td><td><code>dest &gt;&gt;&gt;= data &amp; 15</code></td></tr>
 <tr><td colspan="4"></td></tr>
 
-<tr><td colspan="4"><i>Stack instructions:</i></td></tr>
-<tr><td>29</td><td><code>push</code></td><td>Push word (16-bit) on the stack</td><td><code>[(ss &lt;&lt; 8) + sp] = data, sp -= 2</code></td></tr>
-<tr><td>30</td><td><code>pop</code></td><td>Pop word (16-bit) of the stack</td><td><code>dest = [(ss &lt;&lt; 8) + sp + 2], sp += 2</code></td></tr>
+<tr><td colspan="4"><i>Stack instructions (2):</i></td></tr>
+<tr><td>30</td><td><code>push</code></td><td>Push word (16-bit) on the stack</td><td><code>[(ss &lt;&lt; 8) + sp] = data, sp -= 2</code></td></tr>
+<tr><td>31</td><td><code>pop</code></td><td>Pop word (16-bit) of the stack</td><td><code>dest = [(ss &lt;&lt; 8) + sp + 2], sp += 2</code></td></tr>
 <tr><td colspan="4"></td></tr>
 
-<tr><td>31/61</td><td><i>Reserved</i></td><td>-</td><td>-</td></tr>
+<tr><td>32/61</td><td><i>Reserved</i></td><td>-</td><td>-</td></tr>
 </table>
 
 ## The cpuid instruction
