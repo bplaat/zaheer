@@ -83,8 +83,8 @@ The Kora processor has way more registers than the Neva processor, this ensures 
 <tr><td colspan="4"></td></tr>
 
 <tr><td colspan="4"><i>Unaccessible processor used registers:</i></td></tr>
-<tr><td>16</td><td><code>r16</code>, <code>ip</code></td><td>Instruction pointer register</td><td>-</td></tr>
-<tr><td>17</td><td><code>r17</code>, <code>cs</code></td><td>Code segment register</td><td>-</td></tr>
+<tr><td>16</td><td><code>r17</code>, <code>cs</code></td><td>Code segment register</td><td>-</td></tr>
+<tr><td>17</td><td><code>r16</code>, <code>ip</code></td><td>Instruction pointer register</td><td>-</td></tr>
 </table>
 
 ## Flags
@@ -143,8 +143,8 @@ Unlike the Neva processor every instructions is conditional, this can benefit so
 <tr><td>12</td><td><code>-nl</code></td><td>Not lesser</td><td><code>-ge</code> Greater or equal (signed)</td><td><code>sign == overflow</code></td></tr>
 <tr><td colspan="5"></td></tr>
 
-<tr><td>13</td><td><code>-g</code></td><td>Greater</td><td><code>-nle</code> Not lesser or equal (signed)</td><td><code>zero &amp;&amp; sign == overflow</code></td></tr>
-<tr><td>14</td><td><code>-ng</code></td><td>Not greater</td><td><code>-le</code> Lesser or equal (signed)</td><td><code>!zero || sign != overflow</code></td></tr>
+<tr><td>13</td><td><code>-g</code></td><td>Greater</td><td><code>-nle</code> Not lesser or equal (signed)</td><td><code>zero &amp;&amp; (sign == overflow)</code></td></tr>
+<tr><td>14</td><td><code>-ng</code></td><td>Not greater</td><td><code>-le</code> Lesser or equal (signed)</td><td><code>!zero || (sign != overflow)</code></td></tr>
 <tr><td colspan="5"></td></tr>
 
 <tr><td>15</td><td>-</td><td><i>Reserved</i></td><td>-</td><td>-</td></tr>
@@ -176,10 +176,10 @@ The Kora processor has more general instructions then the Neva processor and is 
 
 <tr><td colspan="4"><i>Jump and call instructions (8):</i></td></tr>
 <tr><td>8</td><td><code>jmp</code></td><td>Jump and save instruction pointer</td><td><code>dest = ip, ip = data</code></td></tr>
-<tr><td>9</td><td><code>jmp</code> (relative)</td><td>Jump relative and save instruction pointer</td><td><code>dest = ip, ip += data</code></td></tr>
+<tr><td>9</td><td><code>jmpr</code></td><td>Jump relative and save instruction pointer</td><td><code>dest = ip, ip += data</code></td></tr>
 <tr><td>10</td><td><code>jmpf</code></td><td>Jump far</td><td><code>cs = dest, ip = data</code></td></tr>
 <tr><td>11</td><td><code>call</code></td><td>Call subroutine</td><td><code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip = data</code></td></tr>
-<tr><td>12</td><td><code>call</code> (relative)</td><td>Call relative subroutine</td><td><code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip += data</code></td></tr>
+<tr><td>12</td><td><code>callr</code></td><td>Call relative subroutine</td><td><code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip += data</code></td></tr>
 <tr><td>13</td><td><code>callf</code></td><td>Call far subroutine</td><td><code>[(ss &lt;&lt; 8) + sp] = cs, sp -= 2, cs = dest</code><br/>
    <code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip = data</code></td></tr>
 <tr><td>14</td><td><code>ret</code></td><td>Return from subroutine</td><td><code>ip = [(ss &lt;&lt; 8) + sp + 2], sp += 2 + data</code></td></tr>
