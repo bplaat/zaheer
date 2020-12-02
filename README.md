@@ -50,7 +50,7 @@ The Kora processor has an efficient but may be difficult instruction pipeline de
 ![Kora instruction pipeline](docs/instruction-pipeline.png)
 
 ## Instruction encoding
-Like the Neva processor, I have kept the instruction encoding quite simple, the mode value determines how the instruction is formed:
+The ultimate goal is to create an efficient instruction pipeline so that no clock cycles are wasted:
 
 ![Kora instruction encoding](docs/instruction-encoding.png)
 
@@ -147,7 +147,7 @@ Unlike the Neva processor every instructions is conditional, this can benefit so
 <tr><td>14</td><td><code>-ng</code></td><td>Not greater</td><td><code>-le</code> Lesser or equal (signed)</td><td><code>!zero || sign != overflow</code></td></tr>
 <tr><td colspan="5"></td></tr>
 
-<tr><td>15</td><td><code>-</code></td><td><i>Reserved</i></td><td>-</td><td>-</td></tr>
+<tr><td>15</td><td>-</td><td><i>Reserved</i></td><td>-</td><td>-</td></tr>
 </table>
 
 ## Kora (re)starts jump address
