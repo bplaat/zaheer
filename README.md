@@ -171,10 +171,10 @@ The Kora processor has more general instructions then the Neva processor and is 
 <tr><td colspan="5"><i>Move, load and store instructions (6):</i></td></tr>
 <tr><td>2</td><td><code>mov</code></td><td>Move data</td><td><code>dest = data</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
 <tr><td>3</td><td><code>lw</code></td><td>Load word (16-bit) from memory</td><td><code>dest = [(ds &lt;&lt; 8) + data]</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
-<tr><td>4</td><td><code>lb</code></td><td>Load signed byte (8-bit) from memory</td><td><code>dest = [(ds &lt;&lt; 8) + data] &amp; 0xff (sign extended)</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
-<tr><td>5</td><td><code>lbu</code></td><td>Load byte (8-bit) from memory</td><td><code>dest = [(ds &lt;&lt; 8) + data] &amp; 0xff</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
+<tr><td>4</td><td><code>lb</code></td><td>Load signed byte (8-bit) from memory</td><td><code>dest = [(ds &lt;&lt; 8) + data] &amp; 0x00ff (sign extended)</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
+<tr><td>5</td><td><code>lbu</code></td><td>Load byte (8-bit) from memory</td><td><code>dest = [(ds &lt;&lt; 8) + data] &amp; 0x00ff</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
 <tr><td>6</td><td><code>sw</code></td><td>Store word (16-bit) to memory</td><td><code>[(ds &lt;&lt; 8) + data] = dest</code></td><td>-</td></tr>
-<tr><td>7</td><td><code>sb</code></td><td>Store word (8-bit) to memory</td><td><code>[(ds &lt;&lt; 8) + data] = dest &amp; 0xff</code></td><td>-</td></tr>
+<tr><td>7</td><td><code>sb</code></td><td>Store word (8-bit) to memory</td><td><code>[(ds &lt;&lt; 8) + data] = dest &amp; 0x00ff</code></td><td>-</td></tr>
 <tr><td colspan="5"></td></tr>
 
 <tr><td colspan="5"><i>Jump and call instructions (8):</i></td></tr>

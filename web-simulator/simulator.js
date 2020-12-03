@@ -1,9 +1,20 @@
+// ########################################################################################
+// #################################### KORA ASSEMBLER ####################################
+// ########################################################################################
+
+// TODO
+
+// ########################################################################################
+// ##################################### KORA SIMULATOR ###################################
+// ########################################################################################
+
 function bit (number, bit) {
     return (number >> bit) & 1;
 }
 
 class Memory {
     constructor({ bus, rom, ramSize }) {
+        this.bus = bus;
         this.rom = rom;
         this.ram = new Uint16Array(ramSize / 2);
     }
@@ -15,75 +26,51 @@ class Memory {
     }
 
     clock() {
-        if (bus.address & 1) {
-            console.error('Memory address \'' + bus.address.toString(16).padStart(6, '0') + '\' not word aligned!');
+        if (this.bus.address & 1) {
+            console.error('Memory address \'' + this.bus.address.toString(16).padStart(6, '0') + '\' not word aligned!');
             return;
         }
 
-        const wordAddress = bus.address >> 1;
+        const wordAddress = this.bus.address >> 1;
 
-        if (bus.reading) {
-            if (bus.address < this.ram.length * 2) {
-                bus.data = this.ram[wordAddress];
+        if (this.bus.reading) {
+            if (this.bus.address < this.ram.length * 2) {
+                this.bus.data = this.ram[wordAddress];
             }
 
-            if (bus.address >= (1 << 24) - this.rom.length * 2) {
-                bus.data = this.rom[(bus.address - ((1 << 24) - this.rom.length * 2)) / 2];
+            if (this.bus.address >= (1 << 24) - this.rom.length * 2) {
+                this.bus.data = this.rom[(this.bus.address - ((1 << 24) - this.rom.length * 2)) / 2];
             }
         }
-        else if (bus.writing) {
-            if (bus.address < this.ram.length * 2) {
-                if (bit(bus.byteEnable, 0) && bit(bus.byteEnable, 1)) {
-                    this.ram[wordAddress] = bus.data;
+        else if (this.bus.writing) {
+            if (this.bus.address < this.ram.length * 2) {
+                if (bit(this.bus.byteEnable, 0) && bit(this.bus.byteEnable, 1)) {
+                    this.ram[wordAddress] = this.bus.data;
                 }
-                else if (bit(bus.byteEnable, 0)) {
-                    this.ram[wordAddress] = (this.ram[wordAddress] & 0xff00) | (bus.data & 0x00ff);
+                else if (bit(this.bus.byteEnable, 0)) {
+                    this.ram[wordAddress] = (this.ram[wordAddress] & 0xff00) | (this.bus.data & 0x00ff);
                 }
-                else if (bit(bus.byteEnable, 1)) {
-                    this.ram[wordAddress] = (bus.data & 0xff00) | (this.ram[wordAddress] & 0x00ff);
+                else if (bit(this.bus.byteEnable, 1)) {
+                    this.ram[wordAddress] = (this.bus.data & 0xff00) | (this.ram[wordAddress] & 0x00ff);
                 }
             }
         }
     }
 }
 
-const busOutputLabel = document.getElementById('bus-output-label');
 
 class Bus {
-    constructor() {
-        const rom = new Uint16Array((1 * 256) / 2);
-
-        let p = 0;
-
-        // mov a, 4
-        rom[p++] = (Kora.Opcodes.MOV << 10) | (Kora.Mode.IMMEDIATE_NORMAL << 8) | (Kora.Registers.A << 4) | (Kora.Conditions.ALWAYS);
-        rom[p++] = -2;
-
-        // mov byte [1], a -> sb a, 1
-        rom[p++] = (Kora.Opcodes.SB << 10) | (Kora.Mode.IMMEDIATE_SHORT << 8) | (Kora.Registers.A << 4) | (1);
-
-        // mov b, byte [1] -> lbu a, 1
-        rom[p++] = (Kora.Opcodes.LBU << 10) | (Kora.Mode.IMMEDIATE_SHORT << 8) | (Kora.Registers.B << 4) | (1);
-
-        // subc b, 5
-        rom[p++] = (Kora.Opcodes.SUB << 10) | (Kora.Mode.IMMEDIATE_NORMAL << 8) | (Kora.Registers.B << 4) | (Kora.Conditions.CARRY);
-        rom[p++] = 5;
-
-        // mov c, 9
-        rom[p++] = (Kora.Opcodes.MOV << 10) | (Kora.Mode.IMMEDIATE_SHORT << 8) | (Kora.Registers.C << 4) | (9);
-
-        // halt -> or flags, 1 << 8
-        rom[p++] = (Kora.Opcodes.OR << 10) | (Kora.Mode.IMMEDIATE_NORMAL << 8) | (Kora.Registers.FLAGS << 4) | (Kora.Conditions.ALWAYS);
-        rom[p++] = 1 << Kora.Flags.HALT;
-
+    constructor({ rom, ramSize, outputElement }) {
         this.reading = false;
         this.writing = false;
         this.byteEnable = 0b00;
         this.address = 0;
         this.data = 0;
 
-        this.memory = new Memory({ bus: this, rom, ramSize: 6 * 512});
+        this.memory = new Memory({ bus: this, rom, ramSize });
         this.kora = new Kora({ bus: this });
+
+        this.outputElement = outputElement;
     }
 
     reset() {
@@ -99,12 +86,12 @@ class Bus {
 
         const haltFlag = bit(this.kora.registers[Kora.Registers.FLAGS], Kora.Flags.HALT);
         if (!haltFlag) {
-            busOutputLabel.textContent += (this.reading ? 'r' : (this.writing ? 'w' : '-')) + ' ' +
+            this.outputElement.textContent += (this.reading ? 'r' : (this.writing ? 'w' : '-')) + ' ' +
                 this.address.toString(16).padStart(6, '0') + ' ' +
                 this.data.toString(16).padStart(4, '0') + '\n';
 
-            const outputLines = busOutputLabel.textContent.split('\n');
-            busOutputLabel.textContent = outputLines.slice(Math.max(0, outputLines.length - 40), outputLines.length).join('\n');
+            const outputLines = this.outputElement.textContent.split('\n');
+            this.outputElement.textContent = outputLines.slice(Math.max(0, outputLines.length - 16), outputLines.length).join('\n');
         }
     }
 }
@@ -193,7 +180,12 @@ class Kora {
         }
 
         // Set zero and sign flags
-        const setZeroSignFlags = (data) => {
+        const setZeroSignFlags = (data, clearCarryOverflowFlags) => {
+            // Clear carry flag
+            if (clearCarryOverflowFlags) {
+                this.registers[Kora.Registers.FLAGS] &= ~(1 << Kora.Flags.CARRY);
+            }
+
             // Set zero flag
             if (this.registers[destination] == 0) {
                 this.registers[Kora.Registers.FLAGS] |= 1 << Kora.Flags.ZERO;
@@ -206,6 +198,11 @@ class Kora {
                 this.registers[Kora.Registers.FLAGS] |= 1 << Kora.Flags.SIGN;
             } else {
                 this.registers[Kora.Registers.FLAGS] &= ~(1 << Kora.Flags.SIGN);
+            }
+
+            // Clear overflow flag
+            if (clearCarryOverflowFlags) {
+                this.registers[Kora.Registers.FLAGS] &= ~(1 << Kora.Flags.OVERFOW);
             }
         };
 
@@ -355,7 +352,7 @@ class Kora {
 
             if (opcode == Kora.Opcodes.MOV) {
                 this.registers[destination] = data;
-                setZeroSignFlags(this.registers[destination]);
+                setZeroSignFlags(this.registers[destination], true);
             }
 
             if (opcode == Kora.Opcodes.LW) {
@@ -515,7 +512,7 @@ class Kora {
                     this.registers[Kora.Registers.FLAGS] &= ~(1 << Kora.Flags.CARRY);
                 }
 
-                setZeroSignFlags(this.registers[destination]);
+                setZeroSignFlags(this.registers[destination], false);
 
                 setOverflowFlag(carryFlag);
             }
@@ -530,7 +527,7 @@ class Kora {
                     this.registers[Kora.Registers.FLAGS] &= ~(1 << Kora.Flags.CARRY);
                 }
 
-                setZeroSignFlags(this.registers[destination]);
+                setZeroSignFlags(this.registers[destination], false);
 
                 setOverflowFlag(carryFlag);
             }
@@ -545,7 +542,7 @@ class Kora {
                     this.registers[Kora.Registers.FLAGS] &= ~(1 << Kora.Flags.CARRY);
                 }
 
-                setZeroSignFlags(this.registers[destination]);
+                setZeroSignFlags(this.registers[destination], false);
 
                 setOverflowFlag(carryFlag);
             }
@@ -560,7 +557,7 @@ class Kora {
                     this.registers[Kora.Registers.FLAGS] &= ~(1 << Kora.Flags.CARRY);
                 }
 
-                setZeroSignFlags(this.registers[destination]);
+                setZeroSignFlags(this.registers[destination], false);
 
                 setOverflowFlag(carryFlag);
             }
@@ -575,7 +572,7 @@ class Kora {
                     this.registers[Kora.Registers.FLAGS] &= ~(1 << Kora.Flags.CARRY);
                 }
 
-                setZeroSignFlags(this.registers[destination]);
+                setZeroSignFlags(this.registers[destination], false);
 
                 setOverflowFlag(carryFlag);
             }
@@ -588,7 +585,7 @@ class Kora {
                     this.registers[Kora.Registers.FLAGS] &= ~(1 << Kora.Flags.CARRY);
                 }
 
-                setZeroSignFlags(this.registers[destination]);
+                setZeroSignFlags(new Uint16Array([ this.registers[destination] - data ])[0], false);
 
                 setOverflowFlag(carryFlag);
             }
@@ -599,36 +596,36 @@ class Kora {
 
             if (opcode == Kora.Opcodes.AND) {
                 this.registers[destination] &= data;
-                setZeroSignFlags(this.registers[destination]);
+                setZeroSignFlags(this.registers[destination], true);
             }
 
             if (opcode == Kora.Opcodes.OR) {
                 this.registers[destination] |= data;
-                setZeroSignFlags(this.registers[destination]);
+                setZeroSignFlags(this.registers[destination], true);
             }
 
             if (opcode == Kora.Opcodes.XOR) {
                 this.registers[destination] ^= data;
-                setZeroSignFlags(this.registers[destination]);
+                setZeroSignFlags(this.registers[destination], true);
             }
 
             if (opcode == Kora.Opcodes.NOT) {
                 this.registers[destination] = ~data;
-                setZeroSignFlags(this.registers[destination]);
+                setZeroSignFlags(this.registers[destination], true);
             }
 
             if (opcode == Kora.Opcodes.TEST) {
-                setZeroSignFlags(new Uint16Array([ this.registers[destination] & data ])[0]);
+                setZeroSignFlags(new Uint16Array([ this.registers[destination] & data ])[0], true);
             }
 
             if (opcode == Kora.Opcodes.SHL) {
                 this.registers[destination] <<= data & 16;
-                setZeroSignFlags(this.registers[destination]);
+                setZeroSignFlags(this.registers[destination], true);
             }
 
             if (opcode == Kora.Opcodes.SHR) {
                 this.registers[destination] >>= data & 16;
-                setZeroSignFlags(this.registers[destination]);
+                setZeroSignFlags(this.registers[destination], true);
             }
 
             if (opcode == Kora.Opcodes.SAR) {
@@ -643,7 +640,7 @@ class Kora {
                     }
                 }
 
-                setZeroSignFlags(this.registers[destination]);
+                setZeroSignFlags(this.registers[destination], true);
             }
 
             // ######################################
@@ -680,7 +677,7 @@ class Kora {
 
             if (opcode == Kora.Opcodes.LW) {
                 this.registers[destination] = this.bus.data;
-                setZeroSignFlags(this.registers[destination]);
+                setZeroSignFlags(this.registers[destination], true);
             }
 
             if (opcode == Kora.Opcodes.LB) {
@@ -699,7 +696,7 @@ class Kora {
                     }
                 }
 
-                setZeroSignFlags(this.registers[destination]);
+                setZeroSignFlags(this.registers[destination], true);
             }
 
             if (opcode == Kora.Opcodes.LBU) {
@@ -709,7 +706,7 @@ class Kora {
                     this.registers[destination] = this.bus.data & 0x00ff;
                 }
 
-                setZeroSignFlags(this.registers[destination]);
+                setZeroSignFlags(this.registers[destination], true);
             }
 
             if (this.state = Kora.State.CALL_FAR) {
@@ -742,7 +739,7 @@ class Kora {
 
             if (opcode == Kora.Opcodes.POP) {
                 this.registers[destination] = this.bus.data;
-                setZeroSignFlags(this.registers[destination]);
+                setZeroSignFlags(this.registers[destination], true);
             }
 
             // Fetch next instruction word
@@ -877,12 +874,301 @@ Kora.Opcodes = {
     POP: 31
 };
 
-const bus = new Bus();
+// ########################################################################################
+// ##################################### WINDOW MANAGER ###################################
+// ########################################################################################
 
-bus.reset();
+// Icons
+const Icons = {
+    MINIMIZE: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M20,14H4V10H20" /></svg>',
+    MAXIMIZE: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M4,4H20V20H4V4M6,8V18H18V8H6Z" /></svg>',
+    RESTORE: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M4,8H8V4H20V16H16V20H4V8M16,8V14H18V6H10V8H16M6,12V18H14V12H6Z" /></svg>',
+    CLOSE: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M13.46,12L19,17.54V19H17.54L12,13.46L6.46,19H5V17.54L10.54,12L5,6.46V5H6.46L12,10.54L17.54,5H19V6.46L13.46,12Z" /></svg>'
+};
 
-bus.clock();
+// Windows
+const windows = [];
 
-setInterval(function () {
-    bus.clock();
-}, 1000 / 10);
+window.addEventListener('mousemove', function (event) {
+    if (Window._drag.enabled) {
+        Window._drag.window.x = event.clientX - Window._drag.offset.x;
+        Window._drag.window.y = event.clientY - Window._drag.offset.y;
+
+        Window._drag.window._windowElement.style.top = Window._drag.window.y + 'px';
+        Window._drag.window._windowElement.style.left = Window._drag.window.x + 'px';
+    }
+});
+
+window.addEventListener('mouseup', function (event) {
+    if (Window._drag.enabled) {
+        Window._drag.enabled = false;
+    }
+});
+
+// Window class
+class Window {
+    constructor ({
+        title = 'Untitled', x = -1, y = -1, width = 640, height = 480,
+        minimizable = true, maximizable = true, closable = true,
+        onCreate, onClose = undefined
+    }) {
+        this.id = Window._idCounter++;
+        this.title = title;
+        if (x == -1) {
+            x = (window.innerWidth - width) / 2;
+        }
+        this.x = x;
+        if (y == -1) {
+            y = (window.innerHeight - height) / 2;
+        }
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.minimizable = minimizable;
+        this.maximizable = maximizable;
+        this.closable = closable;
+        this.closed = false;
+
+        this.onCreate = onCreate;
+        this.onClose = onClose;
+
+        // Remove window focus
+        if (Window._focusWindow != undefined) {
+            Window._focusWindow._windowElement.classList.remove('window-has-focus');
+            Window._previousFocusWindow = Window._focusWindow;
+        }
+        Window._focusWindow = this;
+
+        // Create window element
+        this._windowElement = document.createElement('div');
+        this._windowElement.className = 'window window-has-focus';
+        this._windowElement.style.top = this.y + 'px';
+        this._windowElement.style.left = this.x + 'px';
+        this._windowElement.style.width = this.width + 'px';
+        this._windowElement.style.height = (this.height + Window.HEADER_HEIGHT) + 'px';
+        this._windowElement.style.zIndex = Window._zIndexCounter++;
+        this._windowElement.addEventListener('mousedown', (event) => {
+            // When not in focus switch window focus
+            if (!this._windowElement.classList.contains('window-has-focus')) {
+                this.focus();
+            }
+        });
+        Window._containerElement.appendChild(this._windowElement);
+
+        // Create window header element
+        this._windowHeaderElement = document.createElement('div');
+        this._windowHeaderElement.className = 'window-header';
+        this._windowHeaderElement.addEventListener('mousedown', (event) => {
+            if (
+                event.target.classList.contains('window-header-title') ||
+                event.target.classList.contains('window-header-controls')
+            ) {
+                Window._drag.enabled = true;
+                Window._drag.window = this;
+                Window._drag.offset.x = event.clientX - this.x;
+                Window._drag.offset.y = event.clientY - this.y;
+            }
+        });
+        this._windowElement.appendChild(this._windowHeaderElement);
+
+        const windowHeaderTitleElement = document.createElement('div');
+        windowHeaderTitleElement.className = 'window-header-title';
+        windowHeaderTitleElement.textContent = title;
+        this._windowHeaderElement.appendChild(windowHeaderTitleElement);
+
+        const windowHeaderControlsElement = document.createElement('div');
+        windowHeaderControlsElement.className = 'window-header-controls';
+        this._windowHeaderElement.appendChild(windowHeaderControlsElement);
+
+        const windowHeaderMinimizeButtonElement = document.createElement('button');
+        windowHeaderMinimizeButtonElement.className = 'window-header-button';
+        if (!minimizable) windowHeaderCloseButtonElement.disabled = true;
+        windowHeaderMinimizeButtonElement.innerHTML = Icons.MINIMIZE;
+        windowHeaderControlsElement.appendChild(windowHeaderMinimizeButtonElement);
+
+        const windowHeaderMaximizeButtonElement = document.createElement('button');
+        windowHeaderMaximizeButtonElement.className = 'window-header-button';
+        if (!maximizable) windowHeaderCloseButtonElement.disabled = true;
+        windowHeaderMaximizeButtonElement.innerHTML = Icons.MAXIMIZE;
+        windowHeaderControlsElement.appendChild(windowHeaderMaximizeButtonElement);
+
+        const windowHeaderCloseButtonElement = document.createElement('button');
+        windowHeaderCloseButtonElement.className = 'window-header-button';
+        if (!closable) windowHeaderCloseButtonElement.disabled = true;
+        windowHeaderCloseButtonElement.innerHTML = Icons.CLOSE;
+        windowHeaderCloseButtonElement.addEventListener('click', () => {
+            this.close();
+        });
+        windowHeaderControlsElement.appendChild(windowHeaderCloseButtonElement);
+
+        // Create window body element
+        this._windowBodyElement = document.createElement('div');
+        this._windowBodyElement.className = 'window-body';
+        this._windowElement.appendChild(this._windowBodyElement);
+
+        onCreate.bind(this)(this._windowBodyElement);
+
+        // Add window to the windows
+        windows.push(this);
+    }
+
+    focus () {
+        // Remove focus from previous window
+        Window._focusWindow._windowElement.classList.remove('window-has-focus');
+        Window._previousFocusWindow = Window._focusWindow;
+
+        // Add focus to this window
+        Window._focusWindow = this;
+        this._windowElement.classList.add('window-has-focus');
+        this._windowElement.style.zIndex = Window._zIndexCounter++;
+    }
+
+    close () {
+        // Set window is closed
+        this.closed = true;
+
+        // Run close listener
+        if (this.onClose != undefined) {
+            this.onClose.bind(this)();
+        }
+
+        // Remove window instance
+        for (let i = 0; i < windows.length; i++) {
+            if (windows[i].id == this.id) {
+                windows.splice(i);
+                break;
+            }
+        }
+
+        // Remove window element
+        Window._containerElement.removeChild(this._windowElement);
+
+        // Set previous window focus
+        if (Window._previousFocusWindow != undefined) {
+            Window._previousFocusWindow.focus();
+        }
+    }
+}
+
+Window.HEADER_HEIGHT = 49;
+
+Window._containerElement = document.getElementById('window-manager');
+Window._focusWindow = undefined;
+Window._previousFocusWindow = undefined;
+Window._idCounter = 0;
+Window._zIndexCounter = 0;
+Window._drag = {
+    enabled: false,
+    window: undefined,
+    offset: {
+        x: undefined,
+        y: undefined
+    }
+};
+
+// Launcher window
+let launcherWindow = undefined;
+function openLauncher() {
+    if (launcherWindow == undefined || launcherWindow.closed) {
+        launcherWindow = new Window({
+            title: 'Kora Launcher',
+            closable: false,
+
+            onCreate: function (body) {
+                body.innerHTML = '<div class="container">' +
+                    '<h2>Welcome to the Kora Web Environment!</h2>' +
+                    '<p>You can open diffrent tools to create and test programs for the Kora processor platform</p>' +
+                    '<p><button onclick="openAssembler()">Open Kora Assembler</button></p>' +
+                    '<p><button onclick="openSimulator()">Open Kora Simulator</button></p>' +
+                    '</div>';
+            }
+        });
+    } else {
+        launcherWindow.focus();
+    }
+}
+
+// Assembler window
+let assemblerWindow = undefined;
+function openAssembler() {
+    if (assemblerWindow == undefined || assemblerWindow.closed) {
+        assemblerWindow = new Window({
+            title: 'Kora Assembler',
+            width: 800,
+            height: 600,
+
+            onCreate: function (body) {
+                body.innerHTML = '<div class="container">' +
+                    '<h2>Kora Assembler</h2>' +
+                    '</div>';
+            }
+        });
+    } else {
+        assemblerWindow.focus();
+    }
+}
+
+// Simulator window
+let simulatorWindow = undefined;
+function openSimulator() {
+    if (simulatorWindow == undefined || simulatorWindow.closed) {
+        simulatorWindow = new Window({
+            title: 'Kora Simulator',
+            width: 800,
+            height: 600,
+
+            onCreate: function (body) {
+                body.innerHTML = '<div class="container">' +
+                    '<h2>Kora Simulator</h2>' +
+                    '<pre></pre>' +
+                    '</div>';
+
+                // Create ROM the hard way
+                const rom = new Uint16Array((1 * 256) / 2);
+
+                let p = 0;
+
+                // mov a, 4
+                rom[p++] = (Kora.Opcodes.MOV << 10) | (Kora.Mode.IMMEDIATE_NORMAL << 8) | (Kora.Registers.A << 4) | (Kora.Conditions.ALWAYS);
+                rom[p++] = -2;
+
+                // mov byte [1], a -> sb a, 1
+                rom[p++] = (Kora.Opcodes.SB << 10) | (Kora.Mode.IMMEDIATE_SHORT << 8) | (Kora.Registers.A << 4) | (1);
+
+                // mov b, byte [1] -> lbu a, 1
+                rom[p++] = (Kora.Opcodes.LBU << 10) | (Kora.Mode.IMMEDIATE_SHORT << 8) | (Kora.Registers.B << 4) | (1);
+
+                // subc b, 5
+                rom[p++] = (Kora.Opcodes.SUB << 10) | (Kora.Mode.IMMEDIATE_NORMAL << 8) | (Kora.Registers.B << 4) | (Kora.Conditions.CARRY);
+                rom[p++] = 5;
+
+                // mov c, 9
+                rom[p++] = (Kora.Opcodes.MOV << 10) | (Kora.Mode.IMMEDIATE_SHORT << 8) | (Kora.Registers.C << 4) | (9);
+
+                // halt -> or flags, 1 << 8
+                rom[p++] = (Kora.Opcodes.OR << 10) | (Kora.Mode.IMMEDIATE_NORMAL << 8) | (Kora.Registers.FLAGS << 4) | (Kora.Conditions.ALWAYS);
+                rom[p++] = 1 << Kora.Flags.HALT;
+
+                const bus = new Bus({ rom, ramSize: 6 * 512, outputElement: body.children[0].children[1] });
+
+                bus.reset();
+
+                bus.clock();
+
+                this.clockInterval = setInterval(function () {
+                    bus.clock();
+                }, 1000 / 10);
+            },
+
+            onClose: function () {
+                if (this.clockInterval != undefined) {
+                    clearInterval(this.clockInterval);
+                }
+            }
+        });
+    } else {
+        simulatorWindow.focus();
+    }
+}
+
+openLauncher();
