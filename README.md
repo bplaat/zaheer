@@ -45,12 +45,15 @@ As I said, I want the kora processor to become a complete computer platform, whi
 - A multiply and division instruction extention
 
 ## Instruction pipeline
-The Kora processor has an efficient but may be difficult instruction pipeline design:
+The ultimate goal is to create an efficient instruction pipeline so that no clock cycles are wasted:
 
 ![Kora instruction pipeline](docs/instruction-pipeline.png)
 
+## Memory interface
+The Kora processor is connected with a simple 24-bit address and a 16-bit data bus to the RAM. The processor can read or write a word (16-bits off data) every clock cycle. The processor will read the data in the next clock cyle when it has put a read command on the bus. All words must be aligned on a word bassis to keep the design simple. So you can read a word on an uneven address! This is important because otherwise the processor wil crash or get in an unkown state.
+
 ## Instruction encoding
-The ultimate goal is to create an efficient instruction pipeline so that no clock cycles are wasted:
+Like the Neva processor, I have kept the instruction encoding quite simple, the mode value determines how the instruction is formed:
 
 ![Kora instruction encoding](docs/instruction-encoding.png)
 
@@ -88,7 +91,7 @@ The Kora processor has way more registers than the Neva processor, this ensures 
 </table>
 
 ## Flags
-The kora processor has general flags and processor state flags:
+The kora processor has general flags and processor state flags, all flags are stored in the `flags` register:
 
 <table>
 <tr><th>#</th><th>Name</th><th>Meaning</th></tr>
@@ -158,61 +161,61 @@ So the processor starts executing code at `0xffffff00`
 The Kora processor has more general instructions then the Neva processor and is also very extendable:
 
 <table>
-<tr><th>#</th><th>Name</th><th>Meaning</th><th>Operation</th></tr>
+<tr><th>#</th><th>Name</th><th>Meaning</th><th>Operation</th><th>Flags</th></tr>
 
-<tr><td colspan="4"><i>Special instructions (2):</i></td></tr>
-<tr><td>0</td><td><code>nop</code></td><td>No operation</td><td>-</td></tr>
-<tr><td>1</td><td><code>cpuid</code></td><td>Get processor information</td><td>* See cpuid section</td></tr>
-<tr><td colspan="4"></td></tr>
+<tr><td colspan="5"><i>Special instructions (2):</i></td></tr>
+<tr><td>0</td><td><code>nop</code></td><td>No operation</td><td>-</td><td>-</td></tr>
+<tr><td>1</td><td><code>cpuid</code></td><td>Get processor information</td><td>* See cpuid section</td><td>-</td></tr>
+<tr><td colspan="5"></td></tr>
 
-<tr><td colspan="4"><i>Move, load and store instructions (6):</i></td></tr>
-<tr><td>2</td><td><code>mov</code></td><td>Move data</td><td><code>dest = data</code></td></tr>
-<tr><td>3</td><td><code>lw</code></td><td>Load word (16-bit) from memory</td><td><code>dest = [(ds &lt;&lt; 8) + data]</code></td></tr>
-<tr><td>4</td><td><code>lb</code></td><td>Load signed byte (8-bit) from memory</td><td><code>dest = [(ds &lt;&lt; 8) + data] &amp; 0xff (sign extended)</code></td></tr>
-<tr><td>5</td><td><code>lbu</code></td><td>Load byte (8-bit) from memory</td><td><code>dest = [(ds &lt;&lt; 8) + data] &amp; 0xff</code></td></tr>
-<tr><td>6</td><td><code>sw</code></td><td>Store word (16-bit) to memory</td><td><code>[(ds &lt;&lt; 8) + data] = dest</code></td></tr>
-<tr><td>7</td><td><code>sb</code></td><td>Store word (8-bit) to memory</td><td><code>[(ds &lt;&lt; 8) + data] = dest &amp; 0xff</code></td></tr>
-<tr><td colspan="4"></td></tr>
+<tr><td colspan="5"><i>Move, load and store instructions (6):</i></td></tr>
+<tr><td>2</td><td><code>mov</code></td><td>Move data</td><td><code>dest = data</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
+<tr><td>3</td><td><code>lw</code></td><td>Load word (16-bit) from memory</td><td><code>dest = [(ds &lt;&lt; 8) + data]</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
+<tr><td>4</td><td><code>lb</code></td><td>Load signed byte (8-bit) from memory</td><td><code>dest = [(ds &lt;&lt; 8) + data] &amp; 0xff (sign extended)</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
+<tr><td>5</td><td><code>lbu</code></td><td>Load byte (8-bit) from memory</td><td><code>dest = [(ds &lt;&lt; 8) + data] &amp; 0xff</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
+<tr><td>6</td><td><code>sw</code></td><td>Store word (16-bit) to memory</td><td><code>[(ds &lt;&lt; 8) + data] = dest</code></td><td>-</td></tr>
+<tr><td>7</td><td><code>sb</code></td><td>Store word (8-bit) to memory</td><td><code>[(ds &lt;&lt; 8) + data] = dest &amp; 0xff</code></td><td>-</td></tr>
+<tr><td colspan="5"></td></tr>
 
-<tr><td colspan="4"><i>Jump and call instructions (8):</i></td></tr>
-<tr><td>8</td><td><code>jmp</code></td><td>Jump and save instruction pointer</td><td><code>dest = ip, ip = data</code></td></tr>
-<tr><td>9</td><td><code>jmpr</code></td><td>Jump relative and save instruction pointer</td><td><code>dest = ip, ip += data</code></td></tr>
-<tr><td>10</td><td><code>jmpf</code></td><td>Jump far</td><td><code>cs = dest, ip = data</code></td></tr>
-<tr><td>11</td><td><code>call</code></td><td>Call subroutine</td><td><code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip = data</code></td></tr>
-<tr><td>12</td><td><code>callr</code></td><td>Call relative subroutine</td><td><code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip += data</code></td></tr>
+<tr><td colspan="5"><i>Jump and call instructions (8):</i></td></tr>
+<tr><td>8</td><td><code>jmp</code></td><td>Jump and save instruction pointer</td><td><code>dest = ip, ip = data</code></td><td>-</td></tr>
+<tr><td>9</td><td><code>jmpr</code></td><td>Jump relative and save instruction pointer</td><td><code>dest = ip, ip += data</code></td><td>-</td></tr>
+<tr><td>10</td><td><code>jmpf</code></td><td>Jump far</td><td><code>cs = dest, ip = data</code></td><td>-</td></tr>
+<tr><td>11</td><td><code>call</code></td><td>Call subroutine</td><td><code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip = data</code></td><td>-</td></tr>
+<tr><td>12</td><td><code>callr</code></td><td>Call relative subroutine</td><td><code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip += data</code></td><td>-</td></tr>
 <tr><td>13</td><td><code>callf</code></td><td>Call far subroutine</td><td><code>[(ss &lt;&lt; 8) + sp] = cs, sp -= 2, cs = dest</code><br/>
-   <code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip = data</code></td></tr>
-<tr><td>14</td><td><code>ret</code></td><td>Return from subroutine</td><td><code>ip = [(ss &lt;&lt; 8) + sp + 2], sp += 2 + data</code></td></tr>
+   <code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip = data</code></td><td>-</td></tr>
+<tr><td>14</td><td><code>ret</code></td><td>Return from subroutine</td><td><code>ip = [(ss &lt;&lt; 8) + sp + 2], sp += 2 + data</code></td><td>-</td></tr>
 <tr><td>15</td><td><code>retf</code></td><td>Return from far subroutine</td><td><code>ip = [(ss &lt;&lt; 8) + sp + 2], sp += 2</code><br/>
-   <code>cs = [(ss &lt;&lt; 8) + sp + 2], sp += 2 + data</code></td></tr>
-<tr><td colspan="4"></td></tr>
+   <code>cs = [(ss &lt;&lt; 8) + sp + 2], sp += 2 + data</code></td><td>-</td></tr>
+<tr><td colspan="5"></td></tr>
 
-<tr><td colspan="4"><i>Arithmetic instructions (6):</i></td></tr>
-<tr><td>16</td><td><code>add</code></td><td>Add</td><td><code>dest += data</code></td></tr>
-<tr><td>17</td><td><code>adc</code></td><td>Add with carry</td><td><code>dest += data + carry</code></td></tr>
-<tr><td>18</td><td><code>sub</code></td><td>Subtract</td><td><code>dest -= data</code></td></tr>
-<tr><td>19</td><td><code>sbb</code></td><td>Subtract with borrow</td><td><code>dest -= data + borrow</code></td></tr>
-<tr><td>20</td><td><code>neg</code></td><td>Negate</td><td><code>dest = -data</code></td></tr>
-<tr><td>21</td><td><code>cmp</code></td><td>Compare</td><td><code>dest - data (only set flags)</code></td></tr>
-<tr><td colspan="4"></td></tr>
+<tr><td colspan="5"><i>Arithmetic instructions (6):</i></td></tr>
+<tr><td>16</td><td><code>add</code></td><td>Add</td><td><code>dest += data</code></td><td><code>c</code>, <code>z</code>, <code>s</code>, <code>o</code></td></tr>
+<tr><td>17</td><td><code>adc</code></td><td>Add with carry</td><td><code>dest += data + carry</code></td><td><code>c</code>, <code>z</code>, <code>s</code>, <code>o</code></td></tr>
+<tr><td>18</td><td><code>sub</code></td><td>Subtract</td><td><code>dest -= data</code></td><td><code>c</code>, <code>z</code>, <code>s</code>, <code>o</code></td></tr>
+<tr><td>19</td><td><code>sbb</code></td><td>Subtract with borrow</td><td><code>dest -= data + borrow</code></td><td><code>c</code>, <code>z</code>, <code>s</code>, <code>o</code></td></tr>
+<tr><td>20</td><td><code>neg</code></td><td>Negate</td><td><code>dest = -data</code></td><td><code>c</code>, <code>z</code>, <code>s</code>, <code>o</code></td></tr>
+<tr><td>21</td><td><code>cmp</code></td><td>Compare</td><td><code>dest - data (only set flags)</code></td><td><code>c</code>, <code>z</code>, <code>s</code>, <code>o</code></td></tr>
+<tr><td colspan="5"></td></tr>
 
-<tr><td colspan="4"><i>Bitwise instructions (8):</i></td></tr>
-<tr><td>22</td><td><code>and</code></td><td>And</td><td><code>dest &amp;= data</code></td></tr>
-<tr><td>23</td><td><code>or</code></td><td>Or</td><td><code>dest |= data</code></td></tr>
-<tr><td>24</td><td><code>xor</code></td><td>Xor</td><td><code>dest ^= data</code></td></tr>
-<tr><td>25</td><td><code>not</code></td><td>Not</td><td><code>dest = ~data</code></td></tr>
-<tr><td>26</td><td><code>test</code></td><td>Logical compare (And)</td><td><code>dest &amp; data (only set flags)</code></td></tr>
-<tr><td>27</td><td><code>shl</code></td><td>Logical shift left</td><td><code>dest &lt;&lt;= data &amp; 15</code></td></tr>
-<tr><td>28</td><td><code>shr</code></td><td>Logical shift right</td><td><code>dest &gt;&gt;= data &amp; 15</code></td></tr>
-<tr><td>29</td><td><code>sar</code></td><td>Arithmetic shift right</td><td><code>dest &gt;&gt;&gt;= data &amp; 15</code></td></tr>
-<tr><td colspan="4"></td></tr>
+<tr><td colspan="5"><i>Bitwise instructions (8):</i></td></tr>
+<tr><td>22</td><td><code>and</code></td><td>Logical and</td><td><code>dest &amp;= data</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
+<tr><td>23</td><td><code>or</code></td><td>Logical or</td><td><code>dest |= data</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
+<tr><td>24</td><td><code>xor</code></td><td>Logical xor</td><td><code>dest ^= data</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
+<tr><td>25</td><td><code>not</code></td><td>Logical not</td><td><code>dest = ~data</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
+<tr><td>26</td><td><code>test</code></td><td>Logical compare (and)</td><td><code>dest &amp; data (only set flags)</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
+<tr><td>27</td><td><code>shl</code></td><td>Logical shift left</td><td><code>dest &lt;&lt;= data &amp; 15</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
+<tr><td>28</td><td><code>shr</code></td><td>Logical shift right</td><td><code>dest &gt;&gt;= data &amp; 15</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
+<tr><td>29</td><td><code>sar</code></td><td>Arithmetic shift right</td><td><code>dest &gt;&gt;&gt;= data &amp; 15</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
+<tr><td colspan="5"></td></tr>
 
-<tr><td colspan="4"><i>Stack instructions (2):</i></td></tr>
-<tr><td>30</td><td><code>push</code></td><td>Push word (16-bit) on the stack</td><td><code>[(ss &lt;&lt; 8) + sp] = data, sp -= 2</code></td></tr>
-<tr><td>31</td><td><code>pop</code></td><td>Pop word (16-bit) of the stack</td><td><code>dest = [(ss &lt;&lt; 8) + sp + 2], sp += 2</code></td></tr>
-<tr><td colspan="4"></td></tr>
+<tr><td colspan="5"><i>Stack instructions (2):</i></td></tr>
+<tr><td>30</td><td><code>push</code></td><td>Push word (16-bit) on the stack</td><td><code>[(ss &lt;&lt; 8) + sp] = data, sp -= 2</code></td><td>-</td></tr>
+<tr><td>31</td><td><code>pop</code></td><td>Pop word (16-bit) of the stack</td><td><code>dest = [(ss &lt;&lt; 8) + sp + 2], sp += 2</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
+<tr><td colspan="5"></td></tr>
 
-<tr><td>32/61</td><td><i>Reserved</i></td><td>-</td><td>-</td></tr>
+<tr><td>32/61</td><td><i>Reserved</i></td><td>-</td><td>-</td><td>-</td></tr>
 </table>
 
 ## The cpuid instruction

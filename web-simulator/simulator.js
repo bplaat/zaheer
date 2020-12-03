@@ -1,5 +1,5 @@
 function bit (number, bit) {
-    return (number >> bit) % 2 != 0;
+    return (number >> bit) & 1;
 }
 
 class Memory {
@@ -15,9 +15,16 @@ class Memory {
     }
 
     clock() {
+        if (bus.address & 1) {
+            console.error('Memory address \'' + bus.address.toString(16).padStart(6, '0') + '\' not word aligned!');
+            return;
+        }
+
+        const wordAddress = bus.address >> 1;
+
         if (bus.reading) {
             if (bus.address < this.ram.length * 2) {
-                bus.data = this.ram[bus.address / 2];
+                bus.data = this.ram[wordAddress];
             }
 
             if (bus.address >= (1 << 24) - this.rom.length * 2) {
@@ -27,13 +34,13 @@ class Memory {
         else if (bus.writing) {
             if (bus.address < this.ram.length * 2) {
                 if (bit(bus.byteEnable, 0) && bit(bus.byteEnable, 1)) {
-                    this.ram[bus.address / 2] = bus.data;
+                    this.ram[wordAddress] = bus.data;
                 }
                 else if (bit(bus.byteEnable, 0)) {
-                    this.ram[bus.address / 2] = (this.ram[bus.address / 2] & 0xff00) | (bus.data & 0x00ff);
+                    this.ram[wordAddress] = (this.ram[wordAddress] & 0xff00) | (bus.data & 0x00ff);
                 }
                 else if (bit(bus.byteEnable, 1)) {
-                    this.ram[bus.address / 2] = (bus.data & 0xff00) | (this.ram[bus.address / 2] & 0x00ff);
+                    this.ram[wordAddress] = (bus.data & 0xff00) | (this.ram[wordAddress] & 0x00ff);
                 }
             }
         }
@@ -49,13 +56,14 @@ class Bus {
         let p = 0;
 
         // mov a, 4
-        rom[p++] = (Kora.Opcodes.MOV << 10) | (Kora.Mode.IMMEDIATE_SHORT << 8) | (Kora.Registers.A << 4) | (4);
+        rom[p++] = (Kora.Opcodes.MOV << 10) | (Kora.Mode.IMMEDIATE_NORMAL << 8) | (Kora.Registers.A << 4) | (Kora.Conditions.ALWAYS);
+        rom[p++] = -2;
 
-        // mov word [0], a -> sw a, 0
-        rom[p++] = (Kora.Opcodes.SW << 10) | (Kora.Mode.IMMEDIATE_SHORT << 8) | (Kora.Registers.A << 4) | (0);
+        // mov byte [1], a -> sb a, 1
+        rom[p++] = (Kora.Opcodes.SB << 10) | (Kora.Mode.IMMEDIATE_SHORT << 8) | (Kora.Registers.A << 4) | (1);
 
-        // mov b, word [0] -> lw a, 0
-        rom[p++] = (Kora.Opcodes.LW << 10) | (Kora.Mode.IMMEDIATE_SHORT << 8) | (Kora.Registers.B << 4) | (0);
+        // mov b, byte [1] -> lbu a, 1
+        rom[p++] = (Kora.Opcodes.LBU << 10) | (Kora.Mode.IMMEDIATE_SHORT << 8) | (Kora.Registers.B << 4) | (1);
 
         // subc b, 5
         rom[p++] = (Kora.Opcodes.SUB << 10) | (Kora.Mode.IMMEDIATE_NORMAL << 8) | (Kora.Registers.B << 4) | (Kora.Conditions.CARRY);
@@ -172,7 +180,7 @@ class Kora {
         if (isRegister && isNormal) {
             const source = this.instructionWords[1] >> 12;
             const displacement = this.instructionWords[1] & 4095;
-            if ((displacement >> 11) == 1) {
+            if (displacement >> 11) {
                 data = this.registers[source] - displacement;
             } else {
                 data = this.registers[source] + displacement;
@@ -184,8 +192,35 @@ class Kora {
             return;
         }
 
+        // Set zero and sign flags
+        const setZeroSignFlags = (data) => {
+            // Set zero flag
+            if (this.registers[destination] == 0) {
+                this.registers[Kora.Registers.FLAGS] |= 1 << Kora.Flags.ZERO;
+            } else {
+                this.registers[Kora.Registers.FLAGS] &= ~(1 << Kora.Flags.ZERO);
+            }
+
+            // Set sign flag
+            if (bit(this.registers[destination], 15)) {
+                this.registers[Kora.Registers.FLAGS] |= 1 << Kora.Flags.SIGN;
+            } else {
+                this.registers[Kora.Registers.FLAGS] &= ~(1 << Kora.Flags.SIGN);
+            }
+        };
+
+        // Set overflow flag
+        const setOverflowFlag = (oldCarryFlag) => {
+            if (oldCarryFlag != bit(this.registers[Kora.Registers.FLAGS], Kora.Flags.SIGN)) {
+                this.registers[Kora.Registers.FLAGS] |= 1 << Kora.Flags.OVERFOW;
+            } else {
+                this.registers[Kora.Registers.FLAGS] &= ~(1 << Kora.Flags.OVERFOW);
+            }
+        };
+
+        // States
         if (this.state == Kora.State.FETCH) {
-            console.log('# FETCH');
+            console.log('# FETCH FIRST');
             this.bus.reading = true;
             this.bus.writing = false;
             this.bus.address = (this.registers[Kora.Registers.CS] << 8) + this.registers[Kora.Registers.IP];
@@ -200,7 +235,7 @@ class Kora {
             // Small instruction
             const isNormal = bit(this.instructionWords[0], 8);
             if (!isNormal) {
-                this.state = Kora.State.EXECUTE;
+                this.state = Kora.State.EXECUTE_FIRST;
                 this.clock();
                 return;
             }
@@ -208,7 +243,7 @@ class Kora {
             // Normal instruction
             else {
                 // Check condition
-                console.log('# CONDITION');
+                console.log('# CONDITION CHECK');
 
                 const condition = this.instructionWords[0] & 15;
                 let passed;
@@ -268,7 +303,7 @@ class Kora {
 
                 // Fetch next word
                 if (passed) {
-                    console.log('# FETCH');
+                    console.log('# FETCH SECOND');
                     this.bus.reading = true;
                     this.bus.writing = false;
                     this.bus.address = (this.registers[Kora.Registers.CS] << 8) + this.registers[Kora.Registers.IP];
@@ -279,26 +314,23 @@ class Kora {
 
                 // Skip instruction fetch next word
                 else {
-                    console.log('# SKIP FETCH');
-                    this.bus.reading = true;
-                    this.bus.writing = false;
-                    this.bus.address = (this.registers[Kora.Registers.CS] << 8) + this.registers[Kora.Registers.IP] + 2;
-                    this.registers[Kora.Registers.IP] += 2 + 2;
-                    this.state = Kora.State.PROCESS_FIRST;
-                    return;
+                    this.registers[Kora.Registers.IP] += 2;
+                    this.state = Kora.State.FETCH;
+                    return this.clock();
                 }
             }
         }
 
         if (this.state == Kora.State.PROCESS_SECOND) {
             this.instructionWords[1] = this.bus.data;
-            this.state = Kora.State.EXECUTE;
-            this.clock();
-            return;
+
+            // Execute instruction
+            this.state = Kora.State.EXECUTE_FIRST;
+            return this.clock();
         }
 
-        if (this.state == Kora.State.EXECUTE) {
-            console.log('# EXECUTE');
+        if (this.state == Kora.State.EXECUTE_FIRST) {
+            console.log('# EXECUTE FIRST');
 
             // #######################################
             // ########## Special instructions #######
@@ -323,13 +355,14 @@ class Kora {
 
             if (opcode == Kora.Opcodes.MOV) {
                 this.registers[destination] = data;
+                setZeroSignFlags(this.registers[destination]);
             }
 
             if (opcode == Kora.Opcodes.LW) {
                 this.bus.reading = true;
                 this.bus.writing = false;
                 this.bus.address = (this.registers[Kora.Registers.DS] << 8) + data;
-                this.state = Kora.State.WRITEBACK;
+                this.state = Kora.State.EXECUTE_SECOND;
                 return;
             }
 
@@ -337,7 +370,7 @@ class Kora {
                 this.bus.reading = true;
                 this.bus.writing = false;
                 this.bus.address = (this.registers[Kora.Registers.DS] << 8) + ((data >> 1) << 1);
-                this.state = Kora.State.WRITEBACK;
+                this.state = Kora.State.EXECUTE_SECOND;
                 return;
             }
 
@@ -345,7 +378,7 @@ class Kora {
                 this.bus.reading = true;
                 this.bus.writing = false;
                 this.bus.address = (this.registers[Kora.Registers.DS] << 8) + ((data >> 1) << 1);
-                this.state = Kora.State.WRITEBACK;
+                this.state = Kora.State.EXECUTE_SECOND;
                 return;
             }
 
@@ -362,9 +395,13 @@ class Kora {
             if (opcode == Kora.Opcodes.SB) {
                 this.bus.reading = false;
                 this.bus.writing = true;
-                this.bus.byteEnable = data % 2 == 1 ? 0b10 : 0b01;
+                this.bus.byteEnable = data & 1 ? 0b10 : 0b01;
                 this.bus.address = (this.registers[Kora.Registers.DS] << 8) + ((data >> 1) << 1);
-                this.bus.data = this.registers[destination];
+                if (data & 1) {
+                    this.bus.data = (this.registers[destination] & 0x00ff) << 8;
+                } else {
+                    this.bus.data = this.registers[destination] & 0x00ff;
+                }
                 this.state = Kora.State.FETCH;
                 return;
             }
@@ -374,35 +411,94 @@ class Kora {
             // ######################################
 
             if (opcode == Kora.Opcodes.JMP) {
-                // TODO
+                this.registers[destination] = this.registers[Kora.Registers.IP];
+
+                this.registers[Kora.Registers.IP] = data;
             }
 
             if (opcode == Kora.Opcodes.JMPR) {
-                // TODO
+                this.registers[destination] = this.registers[Kora.Registers.IP];
+
+                if (!isRegister && !isNormal && bit(data, 3)) {
+                    this.registers[Kora.Registers.IP] -= data;
+                } else {
+                    this.registers[Kora.Registers.IP] += data;
+                }
             }
 
             if (opcode == Kora.Opcodes.JMPF) {
-                // TODO
+                this.registers[Kora.Registers.CS] = this.registers[destination];
+
+                this.registers[Kora.Registers.IP] = data;
             }
 
             if (opcode == Kora.Opcodes.CALL) {
-                // TODO
+                // Push ip on the stack
+                this.bus.reading = false;
+                this.bus.writing = true;
+                this.bus.byteEnable = 0b11;
+                this.bus.address = (this.registers[Kora.Registers.SS] << 8) + this.registers[Kora.Registers.SP];
+                this.registers[Kora.Registers.SP] -= 2;
+                this.bus.data = this.registers[Kora.Registers.IP];
+
+                this.registers[Kora.Registers.IP] = data;
+
+                this.state = Kora.State.FETCH;
+                return;
             }
 
             if (opcode == Kora.Opcodes.CALLR) {
-                // TODO
+                // Push ip on the stack
+                this.bus.reading = false;
+                this.bus.writing = true;
+                this.bus.byteEnable = 0b11;
+                this.bus.address = (this.registers[Kora.Registers.SS] << 8) + this.registers[Kora.Registers.SP];
+                this.registers[Kora.Registers.SP] -= 2;
+                this.bus.data = this.registers[Kora.Registers.IP];
+
+                if (!isRegister && !isNormal && bit(data, 3)) {
+                    this.registers[Kora.Registers.IP] -= data;
+                } else {
+                    this.registers[Kora.Registers.IP] += data;
+                }
+
+                this.state = Kora.State.FETCH;
+                return;
             }
 
             if (opcode == Kora.Opcodes.CALLF) {
-                // TODO
+                // Push cs on the stack
+                this.bus.reading = false;
+                this.bus.writing = true;
+                this.bus.byteEnable = 0b11;
+                this.bus.address = (this.registers[Kora.Registers.SS] << 8) + this.registers[Kora.Registers.SP];
+                this.registers[Kora.Registers.SP] -= 2;
+                this.bus.data = this.registers[Kora.Registers.CS];
+
+                this.registers[Kora.Registers.CS] = this.registers[destination];
+
+                this.state = Kora.State.EXECUTE_SECOND;
+                return;
             }
 
             if (opcode == Kora.Opcodes.RET) {
-                // TODO
+                // Pop ip off the stack
+                this.bus.reading = true;
+                this.bus.writing = false;
+                this.bus.address = (this.registers[Kora.Registers.SS] << 8) + this.registers[Kora.Registers.SP] + 2;
+                this.registers[Kora.Registers.SP] += 2 + data;
+                this.state = Kora.State.EXECUTE_SECOND;
+                return;
             }
 
             if (opcode == Kora.Opcodes.RETF) {
-                // TODO
+                // Pop ip off the stack
+                this.bus.reading = true;
+                this.bus.writing = false;
+                this.bus.address = (this.registers[Kora.Registers.SS] << 8) + this.registers[Kora.Registers.SP] + 2;
+                this.registers[Kora.Registers.SP] += 2;
+                this.state = Kora.State.EXECUTE_SECOND;
+                return;
             }
 
             // ######################################
@@ -411,31 +507,90 @@ class Kora {
 
             if (opcode == Kora.Opcodes.ADD) {
                 this.registers[destination] += data;
-                // set flags
+
+                // Set carry flag
+                if (this.registers[destination] + data > 0xffff) {
+                    this.registers[Kora.Registers.FLAGS] |= 1 << Kora.Flags.CARRY;
+                } else {
+                    this.registers[Kora.Registers.FLAGS] &= ~(1 << Kora.Flags.CARRY);
+                }
+
+                setZeroSignFlags(this.registers[destination]);
+
+                setOverflowFlag(carryFlag);
             }
 
             if (opcode == Kora.Opcodes.ADC) {
                 this.registers[destination] += data + carryFlag;
-                // set flags
+
+                // Set carry flag
+                if (this.registers[destination] + (data + carryFlag) > 0xffff) {
+                    this.registers[Kora.Registers.FLAGS] |= 1 << Kora.Flags.CARRY;
+                } else {
+                    this.registers[Kora.Registers.FLAGS] &= ~(1 << Kora.Flags.CARRY);
+                }
+
+                setZeroSignFlags(this.registers[destination]);
+
+                setOverflowFlag(carryFlag);
             }
 
             if (opcode == Kora.Opcodes.SUB) {
                 this.registers[destination] -= data;
-                // set flags
+
+                // Set carry flag
+                if (this.registers[destination] - data < 0) {
+                    this.registers[Kora.Registers.FLAGS] |= 1 << Kora.Flags.CARRY;
+                } else {
+                    this.registers[Kora.Registers.FLAGS] &= ~(1 << Kora.Flags.CARRY);
+                }
+
+                setZeroSignFlags(this.registers[destination]);
+
+                setOverflowFlag(carryFlag);
             }
 
             if (opcode == Kora.Opcodes.SBB) {
                 this.registers[destination] -= data + carryFlag;
-                // set flags
+
+                // Set carry flag
+                if (this.registers[destination] - (data + carryFlag) < 0) {
+                    this.registers[Kora.Registers.FLAGS] |= 1 << Kora.Flags.CARRY;
+                } else {
+                    this.registers[Kora.Registers.FLAGS] &= ~(1 << Kora.Flags.CARRY);
+                }
+
+                setZeroSignFlags(this.registers[destination]);
+
+                setOverflowFlag(carryFlag);
             }
 
             if (opcode == Kora.Opcodes.NEG) {
                 this.registers[destination] = -data;
-                // set flags
+
+                // Set carry flag
+                if (-data < 0) {
+                    this.registers[Kora.Registers.FLAGS] |= 1 << Kora.Flags.CARRY;
+                } else {
+                    this.registers[Kora.Registers.FLAGS] &= ~(1 << Kora.Flags.CARRY);
+                }
+
+                setZeroSignFlags(this.registers[destination]);
+
+                setOverflowFlag(carryFlag);
             }
 
             if (opcode == Kora.Opcodes.CMP) {
-                // set flags
+                // Set carry flag
+                if (this.registers[destination] - data < 0) {
+                    this.registers[Kora.Registers.FLAGS] |= 1 << Kora.Flags.CARRY;
+                } else {
+                    this.registers[Kora.Registers.FLAGS] &= ~(1 << Kora.Flags.CARRY);
+                }
+
+                setZeroSignFlags(this.registers[destination]);
+
+                setOverflowFlag(carryFlag);
             }
 
             // ######################################
@@ -444,41 +599,51 @@ class Kora {
 
             if (opcode == Kora.Opcodes.AND) {
                 this.registers[destination] &= data;
-                // set flags
+                setZeroSignFlags(this.registers[destination]);
             }
 
             if (opcode == Kora.Opcodes.OR) {
                 this.registers[destination] |= data;
-                // set flags
+                setZeroSignFlags(this.registers[destination]);
             }
 
             if (opcode == Kora.Opcodes.XOR) {
                 this.registers[destination] ^= data;
-                // set flags
+                setZeroSignFlags(this.registers[destination]);
             }
 
             if (opcode == Kora.Opcodes.NOT) {
                 this.registers[destination] = ~data;
-                // set flags
+                setZeroSignFlags(this.registers[destination]);
             }
 
             if (opcode == Kora.Opcodes.TEST) {
-                // set flags
+                setZeroSignFlags(new Uint16Array([ this.registers[destination] & data ])[0]);
             }
 
             if (opcode == Kora.Opcodes.SHL) {
                 this.registers[destination] <<= data & 16;
-                // set flags
+                setZeroSignFlags(this.registers[destination]);
             }
 
             if (opcode == Kora.Opcodes.SHR) {
                 this.registers[destination] >>= data & 16;
-                // set flags
+                setZeroSignFlags(this.registers[destination]);
             }
 
             if (opcode == Kora.Opcodes.SAR) {
-                this.registers[destination] >>>= data & 16;
-                // set flags
+                this.registers[destination] >>= data & 16;
+
+                const signBit = bit(this.registers[destination], 15);
+                for (let i = 0; i < data & 16; i++) {
+                    if (signBit) {
+                        this.registers[destination] |= 1 << (15 - i);
+                    } else {
+                        this.registers[destination] &= ~(1 << (15 - i));
+                    }
+                }
+
+                setZeroSignFlags(this.registers[destination]);
             }
 
             // ######################################
@@ -501,47 +666,100 @@ class Kora {
                 this.bus.writing = false;
                 this.bus.address = (this.registers[Kora.Registers.SS] << 8) + this.registers[Kora.Registers.SP] + 2;
                 this.registers[Kora.Registers.SP] += 2;
-                this.state = Kora.State.WRITEBACK;
+                this.state = Kora.State.EXECUTE_SECOND;
                 return;
             }
 
-            // Fetch next first word
-            console.log('# FETCH');
-            this.bus.reading = true;
-            this.bus.writing = false;
-            this.bus.address = (this.registers[Kora.Registers.CS] << 8) + this.registers[Kora.Registers.IP];
-            this.registers[Kora.Registers.IP] += 2;
-            this.state = Kora.State.PROCESS_FIRST;
-            return;
+            // Fetch next instruction word
+            this.state = Kora.State.FETCH;
+            return this.clock();
         }
 
-        if (this.state == Kora.State.WRITEBACK) {
-            console.log('# WRITEBACK');
+        if (this.state == Kora.State.EXECUTE_SECOND) {
+            console.log('# EXECUTE SECOND');
 
             if (opcode == Kora.Opcodes.LW) {
                 this.registers[destination] = this.bus.data;
+                setZeroSignFlags(this.registers[destination]);
             }
 
             if (opcode == Kora.Opcodes.LB) {
-                this.registers[destination] = (bit(this.bus.data, 7) << 15) | (this.bus.data & 0x80);
+                if (data & 1) {
+                    this.registers[destination] = this.bus.data >> 8;
+                } else {
+                    this.registers[destination] = this.bus.data & 0x00ff;
+                }
+
+                const signBit = bit(this.registers[destination], 7);
+                for (let i = 8; i < 16; i++) {
+                    if (signBit) {
+                        this.registers[destination] |= 1 << i;
+                    } else {
+                        this.registers[destination] &= ~(1 << i);
+                    }
+                }
+
+                setZeroSignFlags(this.registers[destination]);
             }
 
             if (opcode == Kora.Opcodes.LBU) {
-                this.registers[destination] = this.bus.data & 0x00ff;
+                if (data & 1) {
+                    this.registers[destination] = this.bus.data >> 8;
+                } else {
+                    this.registers[destination] = this.bus.data & 0x00ff;
+                }
+
+                setZeroSignFlags(this.registers[destination]);
+            }
+
+            if (this.state = Kora.State.CALL_FAR) {
+                this.bus.reading = false;
+                this.bus.writing = true;
+                this.bus.byteEnable = 0b11;
+                this.bus.address = (this.registers[Kora.Registers.SS] << 8) + this.registers[Kora.Registers.SP];
+                this.registers[Kora.Registers.SP] -= 2;
+                this.bus.data = this.registers[Kora.Registers.IP];
+
+                this.registers[Kora.Registers.IP] = data;
+
+                this.state = Kora.State.FETCH;
+                return;
+            }
+
+            if (opcode == Kora.Opcodes.RET) {
+                this.registers[Kora.Registers.IP] = this.bus.data;
+            }
+
+            if (opcode == Kora.Opcodes.RETF) {
+                // Pop cs off the stack
+                this.bus.reading = true;
+                this.bus.writing = false;
+                this.bus.address = (this.registers[Kora.Registers.SS] << 8) + this.registers[Kora.Registers.SP] + 2;
+                this.registers[Kora.Registers.SP] += 2 + data;
+                this.state = Kora.State.EXECUTE_SECOND;
+                return;
             }
 
             if (opcode == Kora.Opcodes.POP) {
                 this.registers[destination] = this.bus.data;
+                setZeroSignFlags(this.registers[destination]);
             }
 
-            // Fetch next instruction
-            console.log('# FETCH');
-            this.bus.reading = true;
-            this.bus.writing = false;
-            this.bus.address = (this.registers[Kora.Registers.CS] << 8) + this.registers[Kora.Registers.IP];
-            this.registers[Kora.Registers.IP] += 2;
-            this.state = Kora.State.PROCESS_FIRST;
-            return;
+            // Fetch next instruction word
+            this.state = Kora.State.FETCH;
+            return this.clock();
+        }
+
+        if (this.state = Kora.State.EXECUTE_THIRD) {
+            console.log('# EXECUTE THIRD');
+
+            if (opcode == Kora.Opcodes.RETF) {
+                this.registers[Kora.Registers.CS] = this.bus.data;
+            }
+
+            // Fetch next instruction word
+            this.state = Kora.State.FETCH;
+            return this.clock();
         }
     }
 }
@@ -550,8 +768,9 @@ Kora.State = {
     FETCH: 0,
     PROCESS_FIRST: 1,
     PROCESS_SECOND: 2,
-    EXECUTE: 3,
-    WRITEBACK: 4
+    EXECUTE_FIRST: 3,
+    EXECUTE_SECOND: 4,
+    EXECUTE_THIRD: 5
 };
 
 Kora.Registers = {
@@ -666,4 +885,4 @@ bus.clock();
 
 setInterval(function () {
     bus.clock();
-}, 500);
+}, 1000 / 10);
