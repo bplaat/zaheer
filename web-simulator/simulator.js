@@ -892,6 +892,44 @@ const windows = [];
 
 window.addEventListener('mousemove', function (event) {
     if (Window.drag.enabled) {
+        if (event.clientX < Window.SNAP_BORDER) {
+            Window.drag.window.windowElement.classList.add('window-is-animating');
+            Window.drag.window.windowElement.classList.add('window-is-snapped-left');
+            return;
+        }
+
+        if (event.clientX >= window.innerWidth - Window.SNAP_BORDER) {
+            Window.drag.window.windowElement.classList.add('window-is-animating');
+            Window.drag.window.windowElement.classList.add('window-is-snapped-right');
+            return;
+        }
+
+        if (event.clientY < Window.SNAP_BORDER || event.clientY >= window.innerHeight - Window.SNAP_BORDER) {
+            Window.drag.window.maximize(true);
+            return;
+        }
+
+        if (Window.drag.window.maximized) {
+            Window.drag.window.maximize(false);
+            Window.drag.window.windowElement.classList.remove('window-is-animating');
+            Window.drag.offset.x = Math.round(Window.drag.window.width / 2);
+            Window.drag.offset.y = Math.round(Window.HEADER_HEIGHT / 2);
+        }
+
+        if (Window.drag.window.windowElement.classList.contains('window-is-snapped-left')) {
+            Window.drag.window.windowElement.classList.remove('window-is-snapped-left');
+            Window.drag.window.windowElement.classList.remove('window-is-animating');
+            Window.drag.offset.x = Math.round(Window.drag.window.width / 2);
+            Window.drag.offset.y = Math.round(Window.HEADER_HEIGHT / 2);
+        }
+
+        if (Window.drag.window.windowElement.classList.contains('window-is-snapped-right')) {
+            Window.drag.window.windowElement.classList.remove('window-is-snapped-right');
+            Window.drag.window.windowElement.classList.remove('window-is-animating');
+            Window.drag.offset.x = Math.round(Window.drag.window.width / 2);
+            Window.drag.offset.y = Math.round(Window.HEADER_HEIGHT / 2);
+        }
+
         Window.drag.window.x = event.clientX - Window.drag.offset.x;
         Window.drag.window.y = event.clientY - Window.drag.offset.y;
 
@@ -1029,11 +1067,8 @@ class Window {
         this.windowHeaderElement.className = 'window-header';
         this.windowHeaderElement.addEventListener('mousedown', (event) => {
             if (
-                (
-                    event.target.classList.contains('window-header-title') ||
-                    event.target.classList.contains('window-header-controls')
-                ) &&
-                !this.maximized
+                event.target.classList.contains('window-header-title') ||
+                event.target.classList.contains('window-header-controls')
             ) {
                 Window.drag.enabled = true;
                 Window.drag.window = this;
@@ -1369,6 +1404,7 @@ class Window {
 }
 
 Window.HEADER_HEIGHT = 49;
+Window.SNAP_BORDER = 8;
 
 Window.containerElement = document.getElementById('window-manager');
 
