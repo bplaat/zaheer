@@ -1,3 +1,4 @@
+/* Default styles */
 html, body, .window-manager {
     width: 100%;
     height: 100%;
@@ -14,7 +15,6 @@ body {
     color: #fff;
     background-color: #111;
     overflow: hidden;
-
     user-select: none;
     cursor: default;
 }
@@ -37,6 +37,7 @@ a:hover {
     text-decoration: underline;
 }
 
+/* Window Manager */
 .window-manager {
     position: relative;
 }
@@ -47,13 +48,25 @@ a:hover {
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: url(https://source.unsplash.com/1920x1080/daily?nature);
+    background-image: url(https://source.unsplash.com/random/1920x1080?nature);
     background-position: center center;
     background-size: cover;
     filter: brightness(75%);
-    z-index: -2;
+    z-index: -1;
 }
 
+.footer {
+    position: absolute;
+    right: 16px;
+    bottom: 16px;
+}
+
+.footer > p {
+    text-align: right;
+    margin: 0;
+}
+
+/* Window styles */
 .window {
     position: absolute;
     color: #111;
@@ -79,6 +92,7 @@ a:hover {
     line-height: 48px;
     font-size: 18px;
     font-weight: 500;
+    color: #555;
 }
 
 .window-header-controls {
@@ -102,14 +116,19 @@ a:hover {
 }
 
 .window-body {
-    flex-grow: 1;
+    flex: 1;
     background-color: #ddd;
     border-radius: 0 0 12px 12px;
+    overflow-y: auto;
 }
 
 .window-has-focus > .window-header {
     border-color: #ccc;
     background-color: #eee;
+}
+
+.window-has-focus > .window-header > .window-header-title {
+    color: #111;
 }
 
 .window-has-focus > .window-header .window-header-button:hover {
@@ -120,20 +139,79 @@ a:hover {
     background-color: #fff;
 }
 
+.window-resize-north {
+    position: absolute;
+    top: -8px;
+    width: 100%;
+    height: 16px;
+    cursor: n-resize;
+}
+
+.window-resize-west {
+    position: absolute;
+    top: 0;
+    left: -8px;
+    width: 16px;
+    height: 100%;
+    cursor: w-resize;
+}
+
+.window-resize-east {
+    position: absolute;
+    top: 0;
+    right: -8px;
+    width: 16px;
+    height: 100%;
+    cursor: e-resize;
+}
+
+.window-resize-south {
+    position: absolute;
+    bottom: -8px;
+    width: 100%;
+    height: 16px;
+    cursor: s-resize;
+}
+
+.window-resize-north-west {
+    position: absolute;
+    top: -12px;
+    left: -12px;
+    width: 24px;
+    height: 24px;
+    cursor: nw-resize;
+}
+
+.window-resize-north-east {
+    position: absolute;
+    top: -12px;
+    right: -12px;
+    width: 24px;
+    height: 24px;
+    cursor: ne-resize;
+}
+
+.window-resize-south-west {
+    position: absolute;
+    left: -12px;
+    bottom: -12px;
+    width: 24px;
+    height: 24px;
+    cursor: sw-resize;
+}
+
+.window-resize-south-east {
+    position: absolute;
+    right: -12px;
+    bottom: -12px;
+    width: 24px;
+    height: 24px;
+    cursor: se-resize;
+}
+
+/* User interface styles */
 .container {
     padding: 0 16px;
-}
-
-.footer {
-    position: absolute;
-    right: 16px;
-    bottom: 16px;
-    z-index: -1;
-}
-
-.footer > p {
-    text-align: right;
-    margin: 0;
 }
 
 .icon {

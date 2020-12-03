@@ -237,3 +237,6 @@ a3 = 0b00000000 00000001 ; Processor features bit list
 t1 = 0x0000 ; Processor Manufacter Date Low Unix Timestamp
 t2 = 0x0000 ; Processor Manufacter Date High Unix Timestamp
 ```
+
+## Online simulator and assembler
+There is an online processor simulator and assembler available at [kora-processor.ml](https://kora-processor.ml/)

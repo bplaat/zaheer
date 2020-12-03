@@ -897,11 +897,59 @@ window.addEventListener('mousemove', function (event) {
         Window._drag.window._windowElement.style.top = Window._drag.window.y + 'px';
         Window._drag.window._windowElement.style.left = Window._drag.window.x + 'px';
     }
+
+    if (Window._resize.enabled) {
+        if (Window._resize.direction.north) {
+            const newHeight = (Window._resize.start.y - (event.clientY - Window._resize.offset.y)) + Window._resize.start.height;
+            if (newHeight > Window._resize.window.minHeight && newHeight < Window._resize.window.maxHeight) {
+                Window._resize.window.y = event.clientY - Window._resize.offset.y;
+                Window._resize.window._windowElement.style.top = Window._resize.window.y + 'px';
+
+                Window._resize.window.height = newHeight;
+                Window._resize.window._windowElement.style.height = Window._resize.window.height + Window.HEADER_HEIGHT + 'px';
+            }
+        }
+
+        if (Window._resize.direction.west) {
+            const newWidth = (Window._resize.start.x - (event.clientX - Window._resize.offset.x)) + Window._resize.start.width;
+            if (newWidth > Window._resize.window.minWidth && newWidth < Window._resize.window.maxWidth) {
+                Window._resize.window.x = event.clientX - Window._resize.offset.x;
+                Window._resize.window._windowElement.style.left = Window._resize.window.x + 'px';
+
+                Window._resize.window.width = newWidth;
+                Window._resize.window._windowElement.style.width = Window._resize.window.width + 'px';
+            }
+        }
+
+        if (Window._resize.direction.east) {
+            const newWidth = Window._resize.start.width + ((event.clientX - Window._resize.offset.x) - Window._resize.window.x);
+            if (newWidth > Window._resize.window.minWidth && newWidth < Window._resize.window.maxWidth) {
+                Window._resize.window.width = newWidth;
+                Window._resize.window._windowElement.style.width = Window._resize.window.width + 'px';
+            }
+        }
+
+        if (Window._resize.direction.south) {
+            const newHeight = Window._resize.start.height + ((event.clientY - Window._resize.offset.y) - Window._resize.window.y);
+            if (newHeight > Window._resize.window.minHeight && newHeight < Window._resize.window.maxHeight) {
+                Window._resize.window.height = newHeight;
+                Window._resize.window._windowElement.style.height = Window._resize.window.height + Window.HEADER_HEIGHT + 'px';
+            }
+        }
+    }
 });
 
 window.addEventListener('mouseup', function (event) {
     if (Window._drag.enabled) {
         Window._drag.enabled = false;
+    }
+
+    if (Window._resize.enabled) {
+        Window._resize.enabled = false;
+        Window._resize.direction.north = false;
+        Window._resize.direction.west = false;
+        Window._resize.direction.east = false;
+        Window._resize.direction.south = false;
     }
 });
 
@@ -909,6 +957,7 @@ window.addEventListener('mouseup', function (event) {
 class Window {
     constructor ({
         title = 'Untitled', x = -1, y = -1, width = 640, height = 480,
+        minWidth = 480, minHeight = 320, maxWidth = Infinity, maxHeight = Infinity,
         minimizable = true, maximizable = true, closable = true,
         onCreate, onClose = undefined
     }) {
@@ -924,6 +973,10 @@ class Window {
         this.y = y;
         this.width = width;
         this.height = height;
+        this.minWidth = minWidth;
+        this.minHeight = minHeight;
+        this.maxWidth = maxWidth;
+        this.maxHeight = maxHeight;
         this.minimizable = minimizable;
         this.maximizable = maximizable;
         this.closable = closable;
@@ -1006,6 +1059,159 @@ class Window {
         this._windowBodyElement.className = 'window-body';
         this._windowElement.appendChild(this._windowBodyElement);
 
+        // Create window resize areas
+        const resizeContainerElement = document.createElement('div');
+        resizeContainerElement.className = 'window-resize-container';
+        this._windowElement.appendChild(resizeContainerElement);
+
+        const resizeNorthElement = document.createElement('div');
+        resizeNorthElement.className = 'window-resize-north';
+        resizeNorthElement.addEventListener('mousedown', (event) => {
+            Window._resize.enabled = true;
+            Window._resize.window = this;
+
+            Window._resize.direction.north = true;
+
+            Window._resize.offset.x = event.clientX - this.x;
+            Window._resize.offset.y = event.clientY - this.y;
+
+            Window._resize.start.x = this.x;
+            Window._resize.start.y = this.y;
+            Window._resize.start.width = this.width;
+            Window._resize.start.height = this.height;
+        });
+        resizeContainerElement.appendChild(resizeNorthElement);
+
+        const resizeWestElement = document.createElement('div');
+        resizeWestElement.className = 'window-resize-west';
+        resizeWestElement.addEventListener('mousedown', (event) => {
+            Window._resize.enabled = true;
+            Window._resize.window = this;
+
+            Window._resize.direction.west = true;
+
+            Window._resize.offset.x = event.clientX - this.x;
+            Window._resize.offset.y = event.clientY - this.y;
+
+            Window._resize.start.x = this.x;
+            Window._resize.start.y = this.y;
+            Window._resize.start.width = this.width;
+            Window._resize.start.height = this.height;
+        });
+        resizeContainerElement.appendChild(resizeWestElement);
+
+        const resizeEastElement = document.createElement('div');
+        resizeEastElement.className = 'window-resize-east';
+        resizeEastElement.addEventListener('mousedown', (event) => {
+            Window._resize.enabled = true;
+            Window._resize.window = this;
+
+            Window._resize.direction.east = true;
+
+            Window._resize.offset.x = event.clientX - this.x;
+            Window._resize.offset.y = event.clientY - this.y;
+
+            Window._resize.start.x = this.x;
+            Window._resize.start.y = this.y;
+            Window._resize.start.width = this.width;
+            Window._resize.start.height = this.height;
+        });
+        resizeContainerElement.appendChild(resizeEastElement);
+
+        const resizeSouthElement = document.createElement('div');
+        resizeSouthElement.className = 'window-resize-south';
+        resizeSouthElement.addEventListener('mousedown', (event) => {
+            Window._resize.enabled = true;
+            Window._resize.window = this;
+
+            Window._resize.direction.south = true;
+
+            Window._resize.offset.x = event.clientX - this.x;
+            Window._resize.offset.y = event.clientY - this.y;
+
+            Window._resize.start.x = this.x;
+            Window._resize.start.y = this.y;
+            Window._resize.start.width = this.width;
+            Window._resize.start.height = this.height;
+        });
+        resizeContainerElement.appendChild(resizeSouthElement);
+
+        const resizeNorthWestElement = document.createElement('div');
+        resizeNorthWestElement.className = 'window-resize-north-west';
+        resizeNorthWestElement.addEventListener('mousedown', (event) => {
+            Window._resize.enabled = true;
+            Window._resize.window = this;
+
+            Window._resize.direction.north = true;
+            Window._resize.direction.west = true;
+
+            Window._resize.offset.x = event.clientX - this.x;
+            Window._resize.offset.y = event.clientY - this.y;
+
+            Window._resize.start.x = this.x;
+            Window._resize.start.y = this.y;
+            Window._resize.start.width = this.width;
+            Window._resize.start.height = this.height;
+        });
+        resizeContainerElement.appendChild(resizeNorthWestElement);
+
+        const resizeNorthEastElement = document.createElement('div');
+        resizeNorthEastElement.className = 'window-resize-north-east';
+        resizeNorthEastElement.addEventListener('mousedown', (event) => {
+            Window._resize.enabled = true;
+            Window._resize.window = this;
+
+            Window._resize.direction.north = true;
+            Window._resize.direction.east = true;
+
+            Window._resize.offset.x = event.clientX - this.x;
+            Window._resize.offset.y = event.clientY - this.y;
+
+            Window._resize.start.x = this.x;
+            Window._resize.start.y = this.y;
+            Window._resize.start.width = this.width;
+            Window._resize.start.height = this.height;
+        });
+        resizeContainerElement.appendChild(resizeNorthEastElement);
+
+        const resizeSouthWestElement = document.createElement('div');
+        resizeSouthWestElement.className = 'window-resize-south-west';
+        resizeSouthWestElement.addEventListener('mousedown', (event) => {
+            Window._resize.enabled = true;
+            Window._resize.window = this;
+
+            Window._resize.direction.west = true;
+            Window._resize.direction.south = true;
+
+            Window._resize.offset.x = event.clientX - this.x;
+            Window._resize.offset.y = event.clientY - this.y;
+
+            Window._resize.start.x = this.x;
+            Window._resize.start.y = this.y;
+            Window._resize.start.width = this.width;
+            Window._resize.start.height = this.height;
+        });
+        resizeContainerElement.appendChild(resizeSouthWestElement);
+
+        const resizeSouthEastElement = document.createElement('div');
+        resizeSouthEastElement.className = 'window-resize-south-east';
+        resizeSouthEastElement.addEventListener('mousedown', (event) => {
+            Window._resize.enabled = true;
+            Window._resize.window = this;
+
+            Window._resize.direction.east = true;
+            Window._resize.direction.south = true;
+
+            Window._resize.offset.x = event.clientX - this.x;
+            Window._resize.offset.y = event.clientY - this.y;
+
+            Window._resize.start.x = this.x;
+            Window._resize.start.y = this.y;
+            Window._resize.start.width = this.width;
+            Window._resize.start.height = this.height;
+        });
+        resizeContainerElement.appendChild(resizeSouthEastElement);
+
         onCreate.bind(this)(this._windowBodyElement);
 
         // Add window to the windows
@@ -1063,6 +1269,26 @@ Window._drag = {
     offset: {
         x: undefined,
         y: undefined
+    }
+};
+Window._resize = {
+    enabled: false,
+    window: undefined,
+    direction: {
+        north: false,
+        west: false,
+        east: false,
+        south: false
+    },
+    offset: {
+        x: undefined,
+        y: undefined
+    },
+    start: {
+        x: undefined,
+        y: undefined,
+        width: undefined,
+        height: undefined
     }
 };
 
