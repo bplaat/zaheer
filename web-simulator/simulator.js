@@ -891,66 +891,68 @@ const Icons = {
 const windows = [];
 
 window.addEventListener('mousemove', function (event) {
-    if (Window._drag.enabled) {
-        Window._drag.window.x = event.clientX - Window._drag.offset.x;
-        Window._drag.window.y = event.clientY - Window._drag.offset.y;
+    if (Window.drag.enabled) {
+        Window.drag.window.x = event.clientX - Window.drag.offset.x;
+        Window.drag.window.y = event.clientY - Window.drag.offset.y;
 
-        Window._drag.window._windowElement.style.top = Window._drag.window.y + 'px';
-        Window._drag.window._windowElement.style.left = Window._drag.window.x + 'px';
+        Window.drag.window.windowElement.style.top = Window.drag.window.y + 'px';
+        Window.drag.window.windowElement.style.left = Window.drag.window.x + 'px';
     }
 
-    if (Window._resize.enabled) {
-        if (Window._resize.direction.north) {
-            const newHeight = (Window._resize.start.y - (event.clientY - Window._resize.offset.y)) + Window._resize.start.height;
-            if (newHeight > Window._resize.window.minHeight && newHeight < Window._resize.window.maxHeight) {
-                Window._resize.window.y = event.clientY - Window._resize.offset.y;
-                Window._resize.window._windowElement.style.top = Window._resize.window.y + 'px';
+    if (Window.resize.enabled) {
+        if (Window.resize.direction.north) {
+            const newHeight = (Window.resize.start.y - (event.clientY - Window.resize.offset.y)) + Window.resize.start.height;
+            if (newHeight > Window.resize.window.minHeight && newHeight < Window.resize.window.maxHeight) {
+                Window.resize.window.y = event.clientY - Window.resize.offset.y;
+                Window.resize.window.windowElement.style.top = Window.resize.window.y + 'px';
 
-                Window._resize.window.height = newHeight;
-                Window._resize.window._windowElement.style.height = Window._resize.window.height + Window.HEADER_HEIGHT + 'px';
+                Window.resize.window.height = newHeight;
+                Window.resize.window.windowElement.style.height = Window.resize.window.height + Window.HEADER_HEIGHT + 'px';
+                Window.resize.window.windowBodyElement.style.height =  Window.resize.window.height + 'px';
             }
         }
 
-        if (Window._resize.direction.west) {
-            const newWidth = (Window._resize.start.x - (event.clientX - Window._resize.offset.x)) + Window._resize.start.width;
-            if (newWidth > Window._resize.window.minWidth && newWidth < Window._resize.window.maxWidth) {
-                Window._resize.window.x = event.clientX - Window._resize.offset.x;
-                Window._resize.window._windowElement.style.left = Window._resize.window.x + 'px';
+        if (Window.resize.direction.west) {
+            const newWidth = (Window.resize.start.x - (event.clientX - Window.resize.offset.x)) + Window.resize.start.width;
+            if (newWidth > Window.resize.window.minWidth && newWidth < Window.resize.window.maxWidth) {
+                Window.resize.window.x = event.clientX - Window.resize.offset.x;
+                Window.resize.window.windowElement.style.left = Window.resize.window.x + 'px';
 
-                Window._resize.window.width = newWidth;
-                Window._resize.window._windowElement.style.width = Window._resize.window.width + 'px';
+                Window.resize.window.width = newWidth;
+                Window.resize.window.windowElement.style.width = Window.resize.window.width + 'px';
             }
         }
 
-        if (Window._resize.direction.east) {
-            const newWidth = Window._resize.start.width + ((event.clientX - Window._resize.offset.x) - Window._resize.window.x);
-            if (newWidth > Window._resize.window.minWidth && newWidth < Window._resize.window.maxWidth) {
-                Window._resize.window.width = newWidth;
-                Window._resize.window._windowElement.style.width = Window._resize.window.width + 'px';
+        if (Window.resize.direction.east) {
+            const newWidth = Window.resize.start.width + ((event.clientX - Window.resize.offset.x) - Window.resize.window.x);
+            if (newWidth > Window.resize.window.minWidth && newWidth < Window.resize.window.maxWidth) {
+                Window.resize.window.width = newWidth;
+                Window.resize.window.windowElement.style.width = Window.resize.window.width + 'px';
             }
         }
 
-        if (Window._resize.direction.south) {
-            const newHeight = Window._resize.start.height + ((event.clientY - Window._resize.offset.y) - Window._resize.window.y);
-            if (newHeight > Window._resize.window.minHeight && newHeight < Window._resize.window.maxHeight) {
-                Window._resize.window.height = newHeight;
-                Window._resize.window._windowElement.style.height = Window._resize.window.height + Window.HEADER_HEIGHT + 'px';
+        if (Window.resize.direction.south) {
+            const newHeight = Window.resize.start.height + ((event.clientY - Window.resize.offset.y) - Window.resize.window.y);
+            if (newHeight > Window.resize.window.minHeight && newHeight < Window.resize.window.maxHeight) {
+                Window.resize.window.height = newHeight;
+                Window.resize.window.windowElement.style.height = Window.resize.window.height + Window.HEADER_HEIGHT + 'px';
+                Window.resize.window.windowBodyElement.style.height =  Window.resize.window.height + 'px';
             }
         }
     }
 });
 
 window.addEventListener('mouseup', function (event) {
-    if (Window._drag.enabled) {
-        Window._drag.enabled = false;
+    if (Window.drag.enabled) {
+        Window.drag.enabled = false;
     }
 
-    if (Window._resize.enabled) {
-        Window._resize.enabled = false;
-        Window._resize.direction.north = false;
-        Window._resize.direction.west = false;
-        Window._resize.direction.east = false;
-        Window._resize.direction.south = false;
+    if (Window.resize.enabled) {
+        Window.resize.enabled = false;
+        Window.resize.direction.north = false;
+        Window.resize.direction.west = false;
+        Window.resize.direction.east = false;
+        Window.resize.direction.south = false;
     }
 });
 
@@ -962,26 +964,35 @@ class Window {
         foldable = true, maximizable = true, closable = true,
         onCreate, onClose = undefined
     }) {
-        this.id = Window._idCounter++;
+        this.id = Window.idCounter++;
+
         this.title = title;
+
         if (x == -1) {
             x = (window.innerWidth - width) / 2;
         }
         this.x = x;
+
         if (y == -1) {
             y = (window.innerHeight - height) / 2;
         }
         this.y = y;
+
         this.width = width;
         this.height = height;
+
         this.minWidth = minWidth;
         this.minHeight = minHeight;
+
         this.maxWidth = maxWidth;
         this.maxHeight = maxHeight;
+
         this.foldable = foldable;
         this.folded = false;
+
         this.maximizable = maximizable;
         this.maximized = false;
+
         this.closable = closable;
         this.closed = false;
 
@@ -989,32 +1000,34 @@ class Window {
         this.onClose = onClose;
 
         // Remove window focus
-        if (Window._focusWindow != undefined) {
-            Window._focusWindow._windowElement.classList.remove('window-has-focus');
-            Window._previousFocusWindow = Window._focusWindow;
+        if (Window.focusWindow != undefined) {
+            Window.focusWindow.windowElement.classList.remove('window-has-focus');
         }
-        Window._focusWindow = this;
+        Window.focusWindow = this;
 
         // Create window element
-        this._windowElement = document.createElement('div');
-        this._windowElement.className = 'window window-has-focus';
-        this._windowElement.style.top = this.y + 'px';
-        this._windowElement.style.left = this.x + 'px';
-        this._windowElement.style.width = this.width + 'px';
-        this._windowElement.style.height = (this.height + Window.HEADER_HEIGHT) + 'px';
-        this._windowElement.style.zIndex = Window._zIndexCounter++;
-        this._windowElement.addEventListener('mousedown', (event) => {
+        this.windowElement = document.createElement('div');
+        this.windowElement.className = 'window window-has-focus';
+        this.windowElement.style.top = this.y + 'px';
+        this.windowElement.style.left = this.x + 'px';
+        this.windowElement.style.width = this.width + 'px';
+        this.windowElement.style.height = (this.height + Window.HEADER_HEIGHT) + 'px';
+        this.windowElement.style.zIndex = Window.zIndexCounter++;
+        this.windowElement.addEventListener('mousedown', (event) => {
             // When not in focus switch window focus
-            if (!this._windowElement.classList.contains('window-has-focus')) {
+            if (!this.windowElement.classList.contains('window-has-focus')) {
                 this.focus();
             }
         });
-        Window._containerElement.appendChild(this._windowElement);
+        this.windowElement.addEventListener('transitionend', () => {
+            this.windowElement.classList.remove('window-is-animating');
+        });
+        Window.containerElement.appendChild(this.windowElement);
 
         // Create window header element
-        this._windowHeaderElement = document.createElement('div');
-        this._windowHeaderElement.className = 'window-header';
-        this._windowHeaderElement.addEventListener('mousedown', (event) => {
+        this.windowHeaderElement = document.createElement('div');
+        this.windowHeaderElement.className = 'window-header';
+        this.windowHeaderElement.addEventListener('mousedown', (event) => {
             if (
                 (
                     event.target.classList.contains('window-header-title') ||
@@ -1022,13 +1035,13 @@ class Window {
                 ) &&
                 !this.maximized
             ) {
-                Window._drag.enabled = true;
-                Window._drag.window = this;
-                Window._drag.offset.x = event.clientX - this.x;
-                Window._drag.offset.y = event.clientY - this.y;
+                Window.drag.enabled = true;
+                Window.drag.window = this;
+                Window.drag.offset.x = event.clientX - this.x;
+                Window.drag.offset.y = event.clientY - this.y;
             }
         });
-        this._windowHeaderElement.addEventListener('dblclick', (event) => {
+        this.windowHeaderElement.addEventListener('dblclick', (event) => {
             if (
                 event.target.classList.contains('window-header-title') ||
                 event.target.classList.contains('window-header-controls')
@@ -1040,76 +1053,77 @@ class Window {
                 }
             }
         });
-        this._windowElement.appendChild(this._windowHeaderElement);
+        this.windowElement.appendChild(this.windowHeaderElement);
 
         const windowHeaderTitleElement = document.createElement('div');
         windowHeaderTitleElement.className = 'window-header-title';
         windowHeaderTitleElement.textContent = title;
-        this._windowHeaderElement.appendChild(windowHeaderTitleElement);
+        this.windowHeaderElement.appendChild(windowHeaderTitleElement);
 
         const windowHeaderControlsElement = document.createElement('div');
         windowHeaderControlsElement.className = 'window-header-controls';
-        this._windowHeaderElement.appendChild(windowHeaderControlsElement);
+        this.windowHeaderElement.appendChild(windowHeaderControlsElement);
 
-        this._windowHeaderFoldButtonElement = document.createElement('button');
-        this._windowHeaderFoldButtonElement.className = 'window-header-button';
+        this.windowHeaderFoldButtonElement = document.createElement('button');
+        this.windowHeaderFoldButtonElement.className = 'window-header-button';
         if (!foldable) {
-            this._windowHeaderCloseButtonElement.disabled = true;
+            this.windowHeaderCloseButtonElement.disabled = true;
         }
-        this._windowHeaderFoldButtonElement.innerHTML = Icons.FOLD;
-        this._windowHeaderFoldButtonElement.addEventListener('click', () => {
+        this.windowHeaderFoldButtonElement.innerHTML = Icons.FOLD;
+        this.windowHeaderFoldButtonElement.addEventListener('click', () => {
             this.fold(!this.folded);
         });
-        windowHeaderControlsElement.appendChild(this._windowHeaderFoldButtonElement);
+        windowHeaderControlsElement.appendChild(this.windowHeaderFoldButtonElement);
 
-        this._windowHeaderMaximizeButtonElement = document.createElement('button');
-        this._windowHeaderMaximizeButtonElement.className = 'window-header-button';
+        this.windowHeaderMaximizeButtonElement = document.createElement('button');
+        this.windowHeaderMaximizeButtonElement.className = 'window-header-button';
         if (!maximizable) {
-            this._windowHeaderCloseButtonElement.disabled = true;
+            this.windowHeaderCloseButtonElement.disabled = true;
         }
-        this._windowHeaderMaximizeButtonElement.innerHTML = Icons.MAXIMIZE;
-        this._windowHeaderMaximizeButtonElement.addEventListener('click', () => {
+        this.windowHeaderMaximizeButtonElement.innerHTML = Icons.MAXIMIZE;
+        this.windowHeaderMaximizeButtonElement.addEventListener('click', () => {
             this.maximize(!this.maximized);
         });
-        windowHeaderControlsElement.appendChild(this._windowHeaderMaximizeButtonElement);
+        windowHeaderControlsElement.appendChild(this.windowHeaderMaximizeButtonElement);
 
-        this._windowHeaderCloseButtonElement = document.createElement('button');
-        this._windowHeaderCloseButtonElement.className = 'window-header-button';
+        this.windowHeaderCloseButtonElement = document.createElement('button');
+        this.windowHeaderCloseButtonElement.className = 'window-header-button';
         if (!closable) {
-            this._windowHeaderCloseButtonElement.disabled = true;
+            this.windowHeaderCloseButtonElement.disabled = true;
         }
-        this._windowHeaderCloseButtonElement.innerHTML = Icons.CLOSE;
-        this._windowHeaderCloseButtonElement.addEventListener('click', () => {
+        this.windowHeaderCloseButtonElement.innerHTML = Icons.CLOSE;
+        this.windowHeaderCloseButtonElement.addEventListener('click', () => {
             this.close();
         });
-        windowHeaderControlsElement.appendChild(this._windowHeaderCloseButtonElement);
+        windowHeaderControlsElement.appendChild(this.windowHeaderCloseButtonElement);
 
         // Create window body element
-        this._windowBodyElement = document.createElement('div');
-        this._windowBodyElement.className = 'window-body';
-        this._windowElement.appendChild(this._windowBodyElement);
+        this.windowBodyElement = document.createElement('div');
+        this.windowBodyElement.className = 'window-body';
+        this.windowBodyElement.style.height = this.height + 'px';
+        this.windowElement.appendChild(this.windowBodyElement);
 
         // Create window resize areas
         const resizeContainerElement = document.createElement('div');
         resizeContainerElement.className = 'window-resize-container';
-        this._windowElement.appendChild(resizeContainerElement);
+        this.windowElement.appendChild(resizeContainerElement);
 
         const resizeNorthElement = document.createElement('div');
         resizeNorthElement.className = 'window-resize-north';
         resizeNorthElement.addEventListener('mousedown', (event) => {
-            if (!this.maximized) {
-                Window._resize.enabled = true;
-                Window._resize.window = this;
+            if (!this.maximized && !this.folded) {
+                Window.resize.enabled = true;
+                Window.resize.window = this;
 
-                Window._resize.direction.north = true;
+                Window.resize.direction.north = true;
 
-                Window._resize.offset.x = event.clientX - this.x;
-                Window._resize.offset.y = event.clientY - this.y;
+                Window.resize.offset.x = event.clientX - this.x;
+                Window.resize.offset.y = event.clientY - this.y;
 
-                Window._resize.start.x = this.x;
-                Window._resize.start.y = this.y;
-                Window._resize.start.width = this.width;
-                Window._resize.start.height = this.height;
+                Window.resize.start.x = this.x;
+                Window.resize.start.y = this.y;
+                Window.resize.start.width = this.width;
+                Window.resize.start.height = this.height;
             }
         });
         resizeContainerElement.appendChild(resizeNorthElement);
@@ -1117,19 +1131,19 @@ class Window {
         const resizeWestElement = document.createElement('div');
         resizeWestElement.className = 'window-resize-west';
         resizeWestElement.addEventListener('mousedown', (event) => {
-            if (!this.maximized && !this.folded) {
-                Window._resize.enabled = true;
-                Window._resize.window = this;
+            if (!this.maximized) {
+                Window.resize.enabled = true;
+                Window.resize.window = this;
 
-                Window._resize.direction.west = true;
+                Window.resize.direction.west = true;
 
-                Window._resize.offset.x = event.clientX - this.x;
-                Window._resize.offset.y = event.clientY - this.y;
+                Window.resize.offset.x = event.clientX - this.x;
+                Window.resize.offset.y = event.clientY - this.y;
 
-                Window._resize.start.x = this.x;
-                Window._resize.start.y = this.y;
-                Window._resize.start.width = this.width;
-                Window._resize.start.height = this.height;
+                Window.resize.start.x = this.x;
+                Window.resize.start.y = this.y;
+                Window.resize.start.width = this.width;
+                Window.resize.start.height = this.height;
             }
         });
         resizeContainerElement.appendChild(resizeWestElement);
@@ -1138,18 +1152,18 @@ class Window {
         resizeEastElement.className = 'window-resize-east';
         resizeEastElement.addEventListener('mousedown', (event) => {
             if (!this.maximized) {
-                Window._resize.enabled = true;
-                Window._resize.window = this;
+                Window.resize.enabled = true;
+                Window.resize.window = this;
 
-                Window._resize.direction.east = true;
+                Window.resize.direction.east = true;
 
-                Window._resize.offset.x = event.clientX - this.x;
-                Window._resize.offset.y = event.clientY - this.y;
+                Window.resize.offset.x = event.clientX - this.x;
+                Window.resize.offset.y = event.clientY - this.y;
 
-                Window._resize.start.x = this.x;
-                Window._resize.start.y = this.y;
-                Window._resize.start.width = this.width;
-                Window._resize.start.height = this.height;
+                Window.resize.start.x = this.x;
+                Window.resize.start.y = this.y;
+                Window.resize.start.width = this.width;
+                Window.resize.start.height = this.height;
             }
         });
         resizeContainerElement.appendChild(resizeEastElement);
@@ -1158,18 +1172,18 @@ class Window {
         resizeSouthElement.className = 'window-resize-south';
         resizeSouthElement.addEventListener('mousedown', (event) => {
             if (!this.maximized && !this.folded) {
-                Window._resize.enabled = true;
-                Window._resize.window = this;
+                Window.resize.enabled = true;
+                Window.resize.window = this;
 
-                Window._resize.direction.south = true;
+                Window.resize.direction.south = true;
 
-                Window._resize.offset.x = event.clientX - this.x;
-                Window._resize.offset.y = event.clientY - this.y;
+                Window.resize.offset.x = event.clientX - this.x;
+                Window.resize.offset.y = event.clientY - this.y;
 
-                Window._resize.start.x = this.x;
-                Window._resize.start.y = this.y;
-                Window._resize.start.width = this.width;
-                Window._resize.start.height = this.height;
+                Window.resize.start.x = this.x;
+                Window.resize.start.y = this.y;
+                Window.resize.start.width = this.width;
+                Window.resize.start.height = this.height;
             }
         });
         resizeContainerElement.appendChild(resizeSouthElement);
@@ -1178,21 +1192,21 @@ class Window {
         resizeNorthWestElement.className = 'window-resize-north-west';
         resizeNorthWestElement.addEventListener('mousedown', (event) => {
             if (!this.maximized) {
-                Window._resize.enabled = true;
-                Window._resize.window = this;
+                Window.resize.enabled = true;
+                Window.resize.window = this;
 
                 if (!this.folded) {
-                    Window._resize.direction.north = true;
+                    Window.resize.direction.north = true;
                 }
-                Window._resize.direction.west = true;
+                Window.resize.direction.west = true;
 
-                Window._resize.offset.x = event.clientX - this.x;
-                Window._resize.offset.y = event.clientY - this.y;
+                Window.resize.offset.x = event.clientX - this.x;
+                Window.resize.offset.y = event.clientY - this.y;
 
-                Window._resize.start.x = this.x;
-                Window._resize.start.y = this.y;
-                Window._resize.start.width = this.width;
-                Window._resize.start.height = this.height;
+                Window.resize.start.x = this.x;
+                Window.resize.start.y = this.y;
+                Window.resize.start.width = this.width;
+                Window.resize.start.height = this.height;
             }
         });
         resizeContainerElement.appendChild(resizeNorthWestElement);
@@ -1201,21 +1215,21 @@ class Window {
         resizeNorthEastElement.className = 'window-resize-north-east';
         resizeNorthEastElement.addEventListener('mousedown', (event) => {
             if (!this.maximized) {
-                Window._resize.enabled = true;
-                Window._resize.window = this;
+                Window.resize.enabled = true;
+                Window.resize.window = this;
 
                 if (!this.folded) {
-                    Window._resize.direction.north = true;
+                    Window.resize.direction.north = true;
                 }
-                Window._resize.direction.east = true;
+                Window.resize.direction.east = true;
 
-                Window._resize.offset.x = event.clientX - this.x;
-                Window._resize.offset.y = event.clientY - this.y;
+                Window.resize.offset.x = event.clientX - this.x;
+                Window.resize.offset.y = event.clientY - this.y;
 
-                Window._resize.start.x = this.x;
-                Window._resize.start.y = this.y;
-                Window._resize.start.width = this.width;
-                Window._resize.start.height = this.height;
+                Window.resize.start.x = this.x;
+                Window.resize.start.y = this.y;
+                Window.resize.start.width = this.width;
+                Window.resize.start.height = this.height;
             }
         });
         resizeContainerElement.appendChild(resizeNorthEastElement);
@@ -1224,21 +1238,21 @@ class Window {
         resizeSouthWestElement.className = 'window-resize-south-west';
         resizeSouthWestElement.addEventListener('mousedown', (event) => {
             if (!this.maximized) {
-                Window._resize.enabled = true;
-                Window._resize.window = this;
+                Window.resize.enabled = true;
+                Window.resize.window = this;
 
-                Window._resize.direction.west = true;
+                Window.resize.direction.west = true;
                 if (!this.folded) {
-                    Window._resize.direction.south = true;
+                    Window.resize.direction.south = true;
                 }
 
-                Window._resize.offset.x = event.clientX - this.x;
-                Window._resize.offset.y = event.clientY - this.y;
+                Window.resize.offset.x = event.clientX - this.x;
+                Window.resize.offset.y = event.clientY - this.y;
 
-                Window._resize.start.x = this.x;
-                Window._resize.start.y = this.y;
-                Window._resize.start.width = this.width;
-                Window._resize.start.height = this.height;
+                Window.resize.start.x = this.x;
+                Window.resize.start.y = this.y;
+                Window.resize.start.width = this.width;
+                Window.resize.start.height = this.height;
             }
         });
         resizeContainerElement.appendChild(resizeSouthWestElement);
@@ -1247,63 +1261,71 @@ class Window {
         resizeSouthEastElement.className = 'window-resize-south-east';
         resizeSouthEastElement.addEventListener('mousedown', (event) => {
             if (!this.maximized) {
-                Window._resize.enabled = true;
-                Window._resize.window = this;
+                Window.resize.enabled = true;
+                Window.resize.window = this;
 
-                Window._resize.direction.east = true;
+                Window.resize.direction.east = true;
                 if (!this.folded) {
-                    Window._resize.direction.south = true;
+                    Window.resize.direction.south = true;
                 }
 
-                Window._resize.offset.x = event.clientX - this.x;
-                Window._resize.offset.y = event.clientY - this.y;
+                Window.resize.offset.x = event.clientX - this.x;
+                Window.resize.offset.y = event.clientY - this.y;
 
-                Window._resize.start.x = this.x;
-                Window._resize.start.y = this.y;
-                Window._resize.start.width = this.width;
-                Window._resize.start.height = this.height;
+                Window.resize.start.x = this.x;
+                Window.resize.start.y = this.y;
+                Window.resize.start.width = this.width;
+                Window.resize.start.height = this.height;
             }
         });
         resizeContainerElement.appendChild(resizeSouthEastElement);
 
-        onCreate.bind(this)(this._windowBodyElement);
+        onCreate.bind(this)(this.windowBodyElement);
 
         // Add window to the windows
         windows.push(this);
+
+        // Start window create animation in next frame
+        setTimeout(() => {
+            this.windowElement.classList.add('window-is-visible');
+        }, 50);
     }
 
     focus () {
         // Remove focus from previous window
-        Window._focusWindow._windowElement.classList.remove('window-has-focus');
-        Window._previousFocusWindow = Window._focusWindow;
+        Window.focusWindow.windowElement.classList.remove('window-has-focus');
 
         // Add focus to this window
-        Window._focusWindow = this;
-        this._windowElement.classList.add('window-has-focus');
-        this._windowElement.style.zIndex = Window._zIndexCounter++;
+        Window.focusWindow = this;
+        this.windowElement.classList.add('window-has-focus');
+        this.windowElement.style.zIndex = Window.zIndexCounter++;
     }
 
     fold (fold) {
         this.folded = fold;
 
+        this.windowElement.classList.add('window-is-animating');
+
         if (this.folded) {
-            this._windowElement.classList.add('window-is-folded');
-            this._windowHeaderFoldButtonElement.innerHTML = Icons.EXPAND;
+            this.windowElement.classList.add('window-is-folded');
+            this.windowHeaderFoldButtonElement.innerHTML = Icons.EXPAND;
         } else {
-            this._windowElement.classList.remove('window-is-folded');
-            this._windowHeaderFoldButtonElement.innerHTML = Icons.FOLD;
+            this.windowElement.classList.remove('window-is-folded');
+            this.windowHeaderFoldButtonElement.innerHTML = Icons.FOLD;
         }
     }
 
     maximize (maximize) {
         this.maximized = maximize;
 
+        this.windowElement.classList.add('window-is-animating');
+
         if (this.maximized) {
-            this._windowElement.classList.add('window-is-maximized');
-            this._windowHeaderMaximizeButtonElement.innerHTML = Icons.RESTORE;
+            this.windowElement.classList.add('window-is-maximized');
+            this.windowHeaderMaximizeButtonElement.innerHTML = Icons.RESTORE;
         } else {
-            this._windowElement.classList.remove('window-is-maximized');
-            this._windowHeaderMaximizeButtonElement.innerHTML = Icons.MAXIMIZE;
+            this.windowElement.classList.remove('window-is-maximized');
+            this.windowHeaderMaximizeButtonElement.innerHTML = Icons.MAXIMIZE;
         }
     }
 
@@ -1316,52 +1338,71 @@ class Window {
             this.onClose.bind(this)();
         }
 
-        // Remove window instance
-        for (let i = 0; i < windows.length; i++) {
-            if (windows[i].id == this.id) {
-                windows.splice(i);
-                break;
+        // Show window close animation;
+        this.windowElement.classList.remove('window-is-visible');
+
+        // Remove window element when animation is complete
+        this.windowElement.addEventListener('transitionend', () => {
+            Window.containerElement.removeChild(this.windowElement);
+
+            // Remove window instance
+            for (let i = 0; i < windows.length; i++) {
+                if (windows[i].id == this.id) {
+                    windows.splice(i);
+                    break;
+                }
             }
-        }
 
-        // Remove window element
-        Window._containerElement.removeChild(this._windowElement);
+            // Set previous window focus
+            if (windows.length > 0) {
+                const topWindow = windows[0];
+                for (let i = 1; i < windows.length; i++) {
+                    if (windows[i].windowElement.style.zIndex > topWindow.windowElement.style.zIndex) {
+                        topWindow = windows[i];
+                    }
+                }
 
-        // Set previous window focus
-        if (Window._previousFocusWindow != undefined) {
-            Window._previousFocusWindow.focus();
-        }
+                topWindow.focus();
+            }
+        });
     }
 }
 
 Window.HEADER_HEIGHT = 49;
 
-Window._containerElement = document.getElementById('window-manager');
-Window._focusWindow = undefined;
-Window._previousFocusWindow = undefined;
-Window._idCounter = 0;
-Window._zIndexCounter = 0;
-Window._drag = {
+Window.containerElement = document.getElementById('window-manager');
+
+Window.focusWindow = undefined;
+
+Window.idCounter = 0;
+Window.zIndexCounter = 0;
+
+Window.drag = {
     enabled: false,
     window: undefined,
+
     offset: {
         x: undefined,
         y: undefined
     }
 };
-Window._resize = {
+
+Window.resize = {
     enabled: false,
     window: undefined,
+
     direction: {
         north: false,
         west: false,
         east: false,
         south: false
     },
+
     offset: {
         x: undefined,
         y: undefined
     },
+
     start: {
         x: undefined,
         y: undefined,
@@ -1382,8 +1423,8 @@ function openLauncher() {
                 body.innerHTML = '<div class="container">' +
                     '<h2>Welcome to the Kora Web Environment!</h2>' +
                     '<p>You can open diffrent tools to create and test programs for the Kora processor platform</p>' +
-                    '<p><button onclick="openAssembler()">Open Kora Assembler</button></p>' +
-                    '<p><button onclick="openSimulator()">Open Kora Simulator</button></p>' +
+                    '<p><button class="button" onclick="openAssembler()">Open Kora Assembler</button></p>' +
+                    '<p><button class="button" onclick="openSimulator()">Open Kora Simulator</button></p>' +
                     '</div>';
             }
         });
@@ -1461,7 +1502,7 @@ function openSimulator() {
 
                 this.clockInterval = setInterval(function () {
                     bus.clock();
-                }, 1000 / 10);
+                }, 1000 / 5);
             },
 
             onClose: function () {
