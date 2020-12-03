@@ -880,7 +880,8 @@ Kora.Opcodes = {
 
 // Icons
 const Icons = {
-    MINIMIZE: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M20,14H4V10H20" /></svg>',
+    FOLD: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M16.59,5.41L15.17,4L12,7.17L8.83,4L7.41,5.41L12,10M7.41,18.59L8.83,20L12,16.83L15.17,20L16.58,18.59L12,14L7.41,18.59Z" /></svg>',
+    EXPAND: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12,18.17L8.83,15L7.42,16.41L12,21L16.59,16.41L15.17,15M12,5.83L15.17,9L16.58,7.59L12,3L7.41,7.59L8.83,9L12,5.83Z" /></svg>',
     MAXIMIZE: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M4,4H20V20H4V4M6,8V18H18V8H6Z" /></svg>',
     RESTORE: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M4,8H8V4H20V16H16V20H4V8M16,8V14H18V6H10V8H16M6,12V18H14V12H6Z" /></svg>',
     CLOSE: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M13.46,12L19,17.54V19H17.54L12,13.46L6.46,19H5V17.54L10.54,12L5,6.46V5H6.46L12,10.54L17.54,5H19V6.46L13.46,12Z" /></svg>'
@@ -958,7 +959,7 @@ class Window {
     constructor ({
         title = 'Untitled', x = -1, y = -1, width = 640, height = 480,
         minWidth = 480, minHeight = 320, maxWidth = Infinity, maxHeight = Infinity,
-        minimizable = true, maximizable = true, closable = true,
+        foldable = true, maximizable = true, closable = true,
         onCreate, onClose = undefined
     }) {
         this.id = Window._idCounter++;
@@ -977,8 +978,10 @@ class Window {
         this.minHeight = minHeight;
         this.maxWidth = maxWidth;
         this.maxHeight = maxHeight;
-        this.minimizable = minimizable;
+        this.foldable = foldable;
+        this.folded = false;
         this.maximizable = maximizable;
+        this.maximized = false;
         this.closable = closable;
         this.closed = false;
 
@@ -1013,13 +1016,28 @@ class Window {
         this._windowHeaderElement.className = 'window-header';
         this._windowHeaderElement.addEventListener('mousedown', (event) => {
             if (
-                event.target.classList.contains('window-header-title') ||
-                event.target.classList.contains('window-header-controls')
+                (
+                    event.target.classList.contains('window-header-title') ||
+                    event.target.classList.contains('window-header-controls')
+                ) &&
+                !this.maximized
             ) {
                 Window._drag.enabled = true;
                 Window._drag.window = this;
                 Window._drag.offset.x = event.clientX - this.x;
                 Window._drag.offset.y = event.clientY - this.y;
+            }
+        });
+        this._windowHeaderElement.addEventListener('dblclick', (event) => {
+            if (
+                event.target.classList.contains('window-header-title') ||
+                event.target.classList.contains('window-header-controls')
+            ) {
+                if (this.folded) {
+                    this.fold(false);
+                } else {
+                    this.maximize(!this.maximized);
+                }
             }
         });
         this._windowElement.appendChild(this._windowHeaderElement);
@@ -1033,26 +1051,38 @@ class Window {
         windowHeaderControlsElement.className = 'window-header-controls';
         this._windowHeaderElement.appendChild(windowHeaderControlsElement);
 
-        const windowHeaderMinimizeButtonElement = document.createElement('button');
-        windowHeaderMinimizeButtonElement.className = 'window-header-button';
-        if (!minimizable) windowHeaderCloseButtonElement.disabled = true;
-        windowHeaderMinimizeButtonElement.innerHTML = Icons.MINIMIZE;
-        windowHeaderControlsElement.appendChild(windowHeaderMinimizeButtonElement);
+        this._windowHeaderFoldButtonElement = document.createElement('button');
+        this._windowHeaderFoldButtonElement.className = 'window-header-button';
+        if (!foldable) {
+            this._windowHeaderCloseButtonElement.disabled = true;
+        }
+        this._windowHeaderFoldButtonElement.innerHTML = Icons.FOLD;
+        this._windowHeaderFoldButtonElement.addEventListener('click', () => {
+            this.fold(!this.folded);
+        });
+        windowHeaderControlsElement.appendChild(this._windowHeaderFoldButtonElement);
 
-        const windowHeaderMaximizeButtonElement = document.createElement('button');
-        windowHeaderMaximizeButtonElement.className = 'window-header-button';
-        if (!maximizable) windowHeaderCloseButtonElement.disabled = true;
-        windowHeaderMaximizeButtonElement.innerHTML = Icons.MAXIMIZE;
-        windowHeaderControlsElement.appendChild(windowHeaderMaximizeButtonElement);
+        this._windowHeaderMaximizeButtonElement = document.createElement('button');
+        this._windowHeaderMaximizeButtonElement.className = 'window-header-button';
+        if (!maximizable) {
+            this._windowHeaderCloseButtonElement.disabled = true;
+        }
+        this._windowHeaderMaximizeButtonElement.innerHTML = Icons.MAXIMIZE;
+        this._windowHeaderMaximizeButtonElement.addEventListener('click', () => {
+            this.maximize(!this.maximized);
+        });
+        windowHeaderControlsElement.appendChild(this._windowHeaderMaximizeButtonElement);
 
-        const windowHeaderCloseButtonElement = document.createElement('button');
-        windowHeaderCloseButtonElement.className = 'window-header-button';
-        if (!closable) windowHeaderCloseButtonElement.disabled = true;
-        windowHeaderCloseButtonElement.innerHTML = Icons.CLOSE;
-        windowHeaderCloseButtonElement.addEventListener('click', () => {
+        this._windowHeaderCloseButtonElement = document.createElement('button');
+        this._windowHeaderCloseButtonElement.className = 'window-header-button';
+        if (!closable) {
+            this._windowHeaderCloseButtonElement.disabled = true;
+        }
+        this._windowHeaderCloseButtonElement.innerHTML = Icons.CLOSE;
+        this._windowHeaderCloseButtonElement.addEventListener('click', () => {
             this.close();
         });
-        windowHeaderControlsElement.appendChild(windowHeaderCloseButtonElement);
+        windowHeaderControlsElement.appendChild(this._windowHeaderCloseButtonElement);
 
         // Create window body element
         this._windowBodyElement = document.createElement('div');
@@ -1067,148 +1097,172 @@ class Window {
         const resizeNorthElement = document.createElement('div');
         resizeNorthElement.className = 'window-resize-north';
         resizeNorthElement.addEventListener('mousedown', (event) => {
-            Window._resize.enabled = true;
-            Window._resize.window = this;
+            if (!this.maximized) {
+                Window._resize.enabled = true;
+                Window._resize.window = this;
 
-            Window._resize.direction.north = true;
+                Window._resize.direction.north = true;
 
-            Window._resize.offset.x = event.clientX - this.x;
-            Window._resize.offset.y = event.clientY - this.y;
+                Window._resize.offset.x = event.clientX - this.x;
+                Window._resize.offset.y = event.clientY - this.y;
 
-            Window._resize.start.x = this.x;
-            Window._resize.start.y = this.y;
-            Window._resize.start.width = this.width;
-            Window._resize.start.height = this.height;
+                Window._resize.start.x = this.x;
+                Window._resize.start.y = this.y;
+                Window._resize.start.width = this.width;
+                Window._resize.start.height = this.height;
+            }
         });
         resizeContainerElement.appendChild(resizeNorthElement);
 
         const resizeWestElement = document.createElement('div');
         resizeWestElement.className = 'window-resize-west';
         resizeWestElement.addEventListener('mousedown', (event) => {
-            Window._resize.enabled = true;
-            Window._resize.window = this;
+            if (!this.maximized && !this.folded) {
+                Window._resize.enabled = true;
+                Window._resize.window = this;
 
-            Window._resize.direction.west = true;
+                Window._resize.direction.west = true;
 
-            Window._resize.offset.x = event.clientX - this.x;
-            Window._resize.offset.y = event.clientY - this.y;
+                Window._resize.offset.x = event.clientX - this.x;
+                Window._resize.offset.y = event.clientY - this.y;
 
-            Window._resize.start.x = this.x;
-            Window._resize.start.y = this.y;
-            Window._resize.start.width = this.width;
-            Window._resize.start.height = this.height;
+                Window._resize.start.x = this.x;
+                Window._resize.start.y = this.y;
+                Window._resize.start.width = this.width;
+                Window._resize.start.height = this.height;
+            }
         });
         resizeContainerElement.appendChild(resizeWestElement);
 
         const resizeEastElement = document.createElement('div');
         resizeEastElement.className = 'window-resize-east';
         resizeEastElement.addEventListener('mousedown', (event) => {
-            Window._resize.enabled = true;
-            Window._resize.window = this;
+            if (!this.maximized) {
+                Window._resize.enabled = true;
+                Window._resize.window = this;
 
-            Window._resize.direction.east = true;
+                Window._resize.direction.east = true;
 
-            Window._resize.offset.x = event.clientX - this.x;
-            Window._resize.offset.y = event.clientY - this.y;
+                Window._resize.offset.x = event.clientX - this.x;
+                Window._resize.offset.y = event.clientY - this.y;
 
-            Window._resize.start.x = this.x;
-            Window._resize.start.y = this.y;
-            Window._resize.start.width = this.width;
-            Window._resize.start.height = this.height;
+                Window._resize.start.x = this.x;
+                Window._resize.start.y = this.y;
+                Window._resize.start.width = this.width;
+                Window._resize.start.height = this.height;
+            }
         });
         resizeContainerElement.appendChild(resizeEastElement);
 
         const resizeSouthElement = document.createElement('div');
         resizeSouthElement.className = 'window-resize-south';
         resizeSouthElement.addEventListener('mousedown', (event) => {
-            Window._resize.enabled = true;
-            Window._resize.window = this;
+            if (!this.maximized && !this.folded) {
+                Window._resize.enabled = true;
+                Window._resize.window = this;
 
-            Window._resize.direction.south = true;
+                Window._resize.direction.south = true;
 
-            Window._resize.offset.x = event.clientX - this.x;
-            Window._resize.offset.y = event.clientY - this.y;
+                Window._resize.offset.x = event.clientX - this.x;
+                Window._resize.offset.y = event.clientY - this.y;
 
-            Window._resize.start.x = this.x;
-            Window._resize.start.y = this.y;
-            Window._resize.start.width = this.width;
-            Window._resize.start.height = this.height;
+                Window._resize.start.x = this.x;
+                Window._resize.start.y = this.y;
+                Window._resize.start.width = this.width;
+                Window._resize.start.height = this.height;
+            }
         });
         resizeContainerElement.appendChild(resizeSouthElement);
 
         const resizeNorthWestElement = document.createElement('div');
         resizeNorthWestElement.className = 'window-resize-north-west';
         resizeNorthWestElement.addEventListener('mousedown', (event) => {
-            Window._resize.enabled = true;
-            Window._resize.window = this;
+            if (!this.maximized) {
+                Window._resize.enabled = true;
+                Window._resize.window = this;
 
-            Window._resize.direction.north = true;
-            Window._resize.direction.west = true;
+                if (!this.folded) {
+                    Window._resize.direction.north = true;
+                }
+                Window._resize.direction.west = true;
 
-            Window._resize.offset.x = event.clientX - this.x;
-            Window._resize.offset.y = event.clientY - this.y;
+                Window._resize.offset.x = event.clientX - this.x;
+                Window._resize.offset.y = event.clientY - this.y;
 
-            Window._resize.start.x = this.x;
-            Window._resize.start.y = this.y;
-            Window._resize.start.width = this.width;
-            Window._resize.start.height = this.height;
+                Window._resize.start.x = this.x;
+                Window._resize.start.y = this.y;
+                Window._resize.start.width = this.width;
+                Window._resize.start.height = this.height;
+            }
         });
         resizeContainerElement.appendChild(resizeNorthWestElement);
 
         const resizeNorthEastElement = document.createElement('div');
         resizeNorthEastElement.className = 'window-resize-north-east';
         resizeNorthEastElement.addEventListener('mousedown', (event) => {
-            Window._resize.enabled = true;
-            Window._resize.window = this;
+            if (!this.maximized) {
+                Window._resize.enabled = true;
+                Window._resize.window = this;
 
-            Window._resize.direction.north = true;
-            Window._resize.direction.east = true;
+                if (!this.folded) {
+                    Window._resize.direction.north = true;
+                }
+                Window._resize.direction.east = true;
 
-            Window._resize.offset.x = event.clientX - this.x;
-            Window._resize.offset.y = event.clientY - this.y;
+                Window._resize.offset.x = event.clientX - this.x;
+                Window._resize.offset.y = event.clientY - this.y;
 
-            Window._resize.start.x = this.x;
-            Window._resize.start.y = this.y;
-            Window._resize.start.width = this.width;
-            Window._resize.start.height = this.height;
+                Window._resize.start.x = this.x;
+                Window._resize.start.y = this.y;
+                Window._resize.start.width = this.width;
+                Window._resize.start.height = this.height;
+            }
         });
         resizeContainerElement.appendChild(resizeNorthEastElement);
 
         const resizeSouthWestElement = document.createElement('div');
         resizeSouthWestElement.className = 'window-resize-south-west';
         resizeSouthWestElement.addEventListener('mousedown', (event) => {
-            Window._resize.enabled = true;
-            Window._resize.window = this;
+            if (!this.maximized) {
+                Window._resize.enabled = true;
+                Window._resize.window = this;
 
-            Window._resize.direction.west = true;
-            Window._resize.direction.south = true;
+                Window._resize.direction.west = true;
+                if (!this.folded) {
+                    Window._resize.direction.south = true;
+                }
 
-            Window._resize.offset.x = event.clientX - this.x;
-            Window._resize.offset.y = event.clientY - this.y;
+                Window._resize.offset.x = event.clientX - this.x;
+                Window._resize.offset.y = event.clientY - this.y;
 
-            Window._resize.start.x = this.x;
-            Window._resize.start.y = this.y;
-            Window._resize.start.width = this.width;
-            Window._resize.start.height = this.height;
+                Window._resize.start.x = this.x;
+                Window._resize.start.y = this.y;
+                Window._resize.start.width = this.width;
+                Window._resize.start.height = this.height;
+            }
         });
         resizeContainerElement.appendChild(resizeSouthWestElement);
 
         const resizeSouthEastElement = document.createElement('div');
         resizeSouthEastElement.className = 'window-resize-south-east';
         resizeSouthEastElement.addEventListener('mousedown', (event) => {
-            Window._resize.enabled = true;
-            Window._resize.window = this;
+            if (!this.maximized) {
+                Window._resize.enabled = true;
+                Window._resize.window = this;
 
-            Window._resize.direction.east = true;
-            Window._resize.direction.south = true;
+                Window._resize.direction.east = true;
+                if (!this.folded) {
+                    Window._resize.direction.south = true;
+                }
 
-            Window._resize.offset.x = event.clientX - this.x;
-            Window._resize.offset.y = event.clientY - this.y;
+                Window._resize.offset.x = event.clientX - this.x;
+                Window._resize.offset.y = event.clientY - this.y;
 
-            Window._resize.start.x = this.x;
-            Window._resize.start.y = this.y;
-            Window._resize.start.width = this.width;
-            Window._resize.start.height = this.height;
+                Window._resize.start.x = this.x;
+                Window._resize.start.y = this.y;
+                Window._resize.start.width = this.width;
+                Window._resize.start.height = this.height;
+            }
         });
         resizeContainerElement.appendChild(resizeSouthEastElement);
 
@@ -1227,6 +1281,30 @@ class Window {
         Window._focusWindow = this;
         this._windowElement.classList.add('window-has-focus');
         this._windowElement.style.zIndex = Window._zIndexCounter++;
+    }
+
+    fold (fold) {
+        this.folded = fold;
+
+        if (this.folded) {
+            this._windowElement.classList.add('window-is-folded');
+            this._windowHeaderFoldButtonElement.innerHTML = Icons.EXPAND;
+        } else {
+            this._windowElement.classList.remove('window-is-folded');
+            this._windowHeaderFoldButtonElement.innerHTML = Icons.FOLD;
+        }
+    }
+
+    maximize (maximize) {
+        this.maximized = maximize;
+
+        if (this.maximized) {
+            this._windowElement.classList.add('window-is-maximized');
+            this._windowHeaderMaximizeButtonElement.innerHTML = Icons.RESTORE;
+        } else {
+            this._windowElement.classList.remove('window-is-maximized');
+            this._windowHeaderMaximizeButtonElement.innerHTML = Icons.MAXIMIZE;
+        }
     }
 
     close () {

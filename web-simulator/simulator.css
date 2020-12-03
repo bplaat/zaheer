@@ -76,6 +76,30 @@ a:hover {
     flex-direction: column;
 }
 
+.window-is-maximized {
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0;
+}
+
+.window-is-maximized > .window-header {
+    border-radius: 0;
+}
+
+.window-is-maximized > .window-body {
+    border-radius: 0;
+}
+
+.window-is-folded {
+    height: 48px !important;
+}
+
+.window-is-folded > .window-header {
+    border-radius: 12px;
+}
+
 .window-header {
     position: relative;
     width: 100%;
@@ -112,7 +136,7 @@ a:hover {
 }
 
 .window-header-button:hover {
-    background-color: #bbb;
+    background-color: #aaa;
 }
 
 .window-body {
