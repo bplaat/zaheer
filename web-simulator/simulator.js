@@ -1009,11 +1009,16 @@ window.addEventListener('mouseup', function (event) {
     }
 });
 
-// Disable CTRL+S
+// Disable Ctrl + S
 document.addEventListener('keydown', function (event) {
     if ((navigator.platform.match('Mac') ? event.metaKey : event.ctrlKey) && event.key.toLowerCase() == 's') {
         event.preventDefault();
     }
+});
+
+// Disable right click context menu
+document.addEventListener('contextmenu', function (event) {
+    event.preventDefault();
 });
 
 // Window class
@@ -1442,7 +1447,7 @@ class Editor {
 
         this.lineNumbersElement = document.createElement('textarea');
         this.lineNumbersElement.className = 'editor-line-numbers';
-        this.lineNumbersElement.disabled = true;
+        this.lineNumbersElement.readOnly = true;
         this.editorElement.appendChild(this.lineNumbersElement);
 
         this.textareaElement = document.createElement('textarea');
@@ -1730,6 +1735,7 @@ function openAssembler () {
         assemblerWindow = new Window({
             title: 'Kora Assembler',
             width: 1024,
+            minWidth: 640,
             height: 768,
 
             onCreate: function (body) {
@@ -1803,14 +1809,16 @@ function openAssembler () {
 
                 const binaryOutputElement = document.createElement('textarea');
                 binaryOutputElement.className = 'output-right';
-                binaryOutputElement.disabled = true;
+                binaryOutputElement.readOnly = true;
                 binaryOutputElement.style.flex = '20';
+                binaryOutputElement.textContent = 'CA FE BA BE';
                 horizontalSeperatorElement.appendChild(binaryOutputElement);
 
                 const errorsOutputElement = document.createElement('textarea');
                 errorsOutputElement.className = 'output-bottom';
-                errorsOutputElement.disabled = true;
+                errorsOutputElement.readOnly = true;
                 errorsOutputElement.style.flex = '20';
+                errorsOutputElement.textContent = 'Coming soon...';
                 verticalSeperatorElement.appendChild(errorsOutputElement);
             }
         });

@@ -52,9 +52,6 @@ textarea {
     border: 0;
     color: #111;
     background-color: transparent;
-    white-space: pre;
-    overflow-wrap: normal;
-    overflow: auto;
 }
 
 /* Window Manager */
@@ -192,6 +189,10 @@ textarea {
     outline: 0;
     background-color: transparent;
     transition: background-color 150ms ease-in;
+}
+
+.window-header-button[disabled], .toolbar-button[disabled] {
+    color: #555;
 }
 
 .window-header-button:hover, .toolbar-button:hover {
@@ -343,14 +344,20 @@ textarea {
 .editor-textarea {
     flex: 1;
     padding: 0 12px;
+    white-space: pre;
+    overflow-wrap: normal;
+    overflow: auto;
 }
 
 .output-right {
     border-left: 1px solid #bbb;
     background-color: #eee;
+    padding: 0 4px;
+    overflow: hidden;
 }
 
 .output-bottom {
     border-top: 1px solid #bbb;
     background-color: #eee;
+    padding: 8px;
 }
