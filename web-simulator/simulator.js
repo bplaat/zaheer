@@ -1139,180 +1139,74 @@ class Window {
         this.windowElement.appendChild(this.windowBodyElement);
 
         // Create window resize areas
+        const generateResizeListener = (north, west, east, south) => {
+            return (event) => {
+                if (this.folded && (north || south) && !west && !east) {
+                    return;
+                }
+
+                if (!this.maximized) {
+                    Window.resize.enabled = true;
+                    Window.resize.window = this;
+
+                    Window.resize.direction.north = !this.folded && north;
+                    Window.resize.direction.west = west;
+                    Window.resize.direction.east = east;
+                    Window.resize.direction.south = !this.folded && south;
+
+                    Window.resize.offset.x = event.clientX - this.x;
+                    Window.resize.offset.y = event.clientY - this.y;
+
+                    Window.resize.start.x = this.x;
+                    Window.resize.start.y = this.y;
+                    Window.resize.start.width = this.width;
+                    Window.resize.start.height = this.height;
+                }
+            };
+        };
+
         const resizeContainerElement = document.createElement('div');
         resizeContainerElement.className = 'window-resize-container';
         this.windowElement.appendChild(resizeContainerElement);
 
         const resizeNorthElement = document.createElement('div');
         resizeNorthElement.className = 'window-resize-north';
-        resizeNorthElement.addEventListener('mousedown', (event) => {
-            if (!this.maximized && !this.folded) {
-                Window.resize.enabled = true;
-                Window.resize.window = this;
-
-                Window.resize.direction.north = true;
-
-                Window.resize.offset.x = event.clientX - this.x;
-                Window.resize.offset.y = event.clientY - this.y;
-
-                Window.resize.start.x = this.x;
-                Window.resize.start.y = this.y;
-                Window.resize.start.width = this.width;
-                Window.resize.start.height = this.height;
-            }
-        });
+        resizeNorthElement.addEventListener('mousedown', generateResizeListener(true, false, false, false));
         resizeContainerElement.appendChild(resizeNorthElement);
 
         const resizeWestElement = document.createElement('div');
         resizeWestElement.className = 'window-resize-west';
-        resizeWestElement.addEventListener('mousedown', (event) => {
-            if (!this.maximized) {
-                Window.resize.enabled = true;
-                Window.resize.window = this;
-
-                Window.resize.direction.west = true;
-
-                Window.resize.offset.x = event.clientX - this.x;
-                Window.resize.offset.y = event.clientY - this.y;
-
-                Window.resize.start.x = this.x;
-                Window.resize.start.y = this.y;
-                Window.resize.start.width = this.width;
-                Window.resize.start.height = this.height;
-            }
-        });
+        resizeWestElement.addEventListener('mousedown', generateResizeListener(false, true, false, false));
         resizeContainerElement.appendChild(resizeWestElement);
 
         const resizeEastElement = document.createElement('div');
         resizeEastElement.className = 'window-resize-east';
-        resizeEastElement.addEventListener('mousedown', (event) => {
-            if (!this.maximized) {
-                Window.resize.enabled = true;
-                Window.resize.window = this;
-
-                Window.resize.direction.east = true;
-
-                Window.resize.offset.x = event.clientX - this.x;
-                Window.resize.offset.y = event.clientY - this.y;
-
-                Window.resize.start.x = this.x;
-                Window.resize.start.y = this.y;
-                Window.resize.start.width = this.width;
-                Window.resize.start.height = this.height;
-            }
-        });
+        resizeEastElement.addEventListener('mousedown', generateResizeListener(false, false, true, false));
         resizeContainerElement.appendChild(resizeEastElement);
 
         const resizeSouthElement = document.createElement('div');
         resizeSouthElement.className = 'window-resize-south';
-        resizeSouthElement.addEventListener('mousedown', (event) => {
-            if (!this.maximized && !this.folded) {
-                Window.resize.enabled = true;
-                Window.resize.window = this;
-
-                Window.resize.direction.south = true;
-
-                Window.resize.offset.x = event.clientX - this.x;
-                Window.resize.offset.y = event.clientY - this.y;
-
-                Window.resize.start.x = this.x;
-                Window.resize.start.y = this.y;
-                Window.resize.start.width = this.width;
-                Window.resize.start.height = this.height;
-            }
-        });
+        resizeSouthElement.addEventListener('mousedown', generateResizeListener(false, false, false, true));
         resizeContainerElement.appendChild(resizeSouthElement);
 
         const resizeNorthWestElement = document.createElement('div');
         resizeNorthWestElement.className = 'window-resize-north-west';
-        resizeNorthWestElement.addEventListener('mousedown', (event) => {
-            if (!this.maximized) {
-                Window.resize.enabled = true;
-                Window.resize.window = this;
-
-                if (!this.folded) {
-                    Window.resize.direction.north = true;
-                }
-                Window.resize.direction.west = true;
-
-                Window.resize.offset.x = event.clientX - this.x;
-                Window.resize.offset.y = event.clientY - this.y;
-
-                Window.resize.start.x = this.x;
-                Window.resize.start.y = this.y;
-                Window.resize.start.width = this.width;
-                Window.resize.start.height = this.height;
-            }
-        });
+        resizeNorthWestElement.addEventListener('mousedown', generateResizeListener(true, true, false, false));
         resizeContainerElement.appendChild(resizeNorthWestElement);
 
         const resizeNorthEastElement = document.createElement('div');
         resizeNorthEastElement.className = 'window-resize-north-east';
-        resizeNorthEastElement.addEventListener('mousedown', (event) => {
-            if (!this.maximized) {
-                Window.resize.enabled = true;
-                Window.resize.window = this;
-
-                if (!this.folded) {
-                    Window.resize.direction.north = true;
-                }
-                Window.resize.direction.east = true;
-
-                Window.resize.offset.x = event.clientX - this.x;
-                Window.resize.offset.y = event.clientY - this.y;
-
-                Window.resize.start.x = this.x;
-                Window.resize.start.y = this.y;
-                Window.resize.start.width = this.width;
-                Window.resize.start.height = this.height;
-            }
-        });
+        resizeNorthEastElement.addEventListener('mousedown', generateResizeListener(true, false, true, false));
         resizeContainerElement.appendChild(resizeNorthEastElement);
 
         const resizeSouthWestElement = document.createElement('div');
         resizeSouthWestElement.className = 'window-resize-south-west';
-        resizeSouthWestElement.addEventListener('mousedown', (event) => {
-            if (!this.maximized) {
-                Window.resize.enabled = true;
-                Window.resize.window = this;
-
-                Window.resize.direction.west = true;
-                if (!this.folded) {
-                    Window.resize.direction.south = true;
-                }
-
-                Window.resize.offset.x = event.clientX - this.x;
-                Window.resize.offset.y = event.clientY - this.y;
-
-                Window.resize.start.x = this.x;
-                Window.resize.start.y = this.y;
-                Window.resize.start.width = this.width;
-                Window.resize.start.height = this.height;
-            }
-        });
+        resizeSouthWestElement.addEventListener('mousedown', generateResizeListener(false, true, false, true));
         resizeContainerElement.appendChild(resizeSouthWestElement);
 
         const resizeSouthEastElement = document.createElement('div');
         resizeSouthEastElement.className = 'window-resize-south-east';
-        resizeSouthEastElement.addEventListener('mousedown', (event) => {
-            if (!this.maximized) {
-                Window.resize.enabled = true;
-                Window.resize.window = this;
-
-                Window.resize.direction.east = true;
-                if (!this.folded) {
-                    Window.resize.direction.south = true;
-                }
-
-                Window.resize.offset.x = event.clientX - this.x;
-                Window.resize.offset.y = event.clientY - this.y;
-
-                Window.resize.start.x = this.x;
-                Window.resize.start.y = this.y;
-                Window.resize.start.width = this.width;
-                Window.resize.start.height = this.height;
-            }
-        });
+        resizeSouthEastElement.addEventListener('mousedown', generateResizeListener(false, false, true, true));
         resizeContainerElement.appendChild(resizeSouthEastElement);
 
         onCreate.bind(this)(this.windowBodyElement);
@@ -1365,9 +1259,6 @@ class Window {
     }
 
     close () {
-        // Set window is closed
-        this.closed = true;
-
         // Run close listener
         if (this.onClose != undefined) {
             this.onClose.bind(this)();
@@ -1378,26 +1269,30 @@ class Window {
 
         // Remove window element when animation is complete
         this.windowElement.addEventListener('transitionend', () => {
-            Window.containerElement.removeChild(this.windowElement);
+            if (!this.closed) {
+                this.closed = true;
 
-            // Remove window instance
-            for (let i = 0; i < windows.length; i++) {
-                if (windows[i].id == this.id) {
-                    windows.splice(i);
-                    break;
-                }
-            }
+                Window.containerElement.removeChild(this.windowElement);
 
-            // Set previous window focus
-            if (windows.length > 0) {
-                const topWindow = windows[0];
-                for (let i = 1; i < windows.length; i++) {
-                    if (windows[i].windowElement.style.zIndex > topWindow.windowElement.style.zIndex) {
-                        topWindow = windows[i];
+                // Remove window instance
+                for (let i = 0; i < windows.length; i++) {
+                    if (windows[i].id == this.id) {
+                        windows.splice(i, 1);
+                        break;
                     }
                 }
 
-                topWindow.focus();
+                // Set previous window focus
+                if (windows.length > 0) {
+                    let topWindow = windows[0];
+                    for (let i = 1; i < windows.length; i++) {
+                        if (windows[i].windowElement.style.zIndex > topWindow.windowElement.style.zIndex) {
+                            topWindow = windows[i];
+                        }
+                    }
+
+                    topWindow.focus();
+                }
             }
         });
     }
@@ -1447,9 +1342,13 @@ Window.resize = {
     }
 };
 
-// Launcher window
+// ########################################################################################
+// ################################## KORA LAUNCHER WINDOW ################################
+// ########################################################################################
+
 let launcherWindow = undefined;
-function openLauncher() {
+
+function openLauncher () {
     if (launcherWindow == undefined || launcherWindow.closed) {
         launcherWindow = new Window({
             title: 'Kora Launcher',
@@ -1469,9 +1368,15 @@ function openLauncher() {
     }
 }
 
-// Assembler window
+openLauncher();
+
+// ########################################################################################
+// ################################# KORA ASSEMBLER WINDOW ################################
+// ########################################################################################
+
 let assemblerWindow = undefined;
-function openAssembler() {
+
+function openAssembler () {
     if (assemblerWindow == undefined || assemblerWindow.closed) {
         assemblerWindow = new Window({
             title: 'Kora Assembler',
@@ -1489,9 +1394,13 @@ function openAssembler() {
     }
 }
 
-// Simulator window
+// ########################################################################################
+// ################################# KORA SIMULATOR WINDOW ################################
+// ########################################################################################
+
 let simulatorWindow = undefined;
-function openSimulator() {
+
+function openSimulator () {
     if (simulatorWindow == undefined || simulatorWindow.closed) {
         simulatorWindow = new Window({
             title: 'Kora Simulator',
@@ -1551,5 +1460,3 @@ function openSimulator() {
         simulatorWindow.focus();
     }
 }
-
-openLauncher();
