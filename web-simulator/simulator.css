@@ -5,7 +5,7 @@ body, button {
     line-height: 1.5;
 }
 
-pre, code {
+pre, code, textarea, .editor-line-numbers {
     font-family: 'Roboto Mono', monospace;
     font-size: 16px;
     line-height: 1.5;
@@ -31,6 +31,10 @@ h1, h2, h3 {
 
 h1, h2, h3, p {
     margin: 16px 0;
+}
+
+pre {
+    margin: 0;
 }
 
 a {
@@ -78,8 +82,9 @@ a:hover {
     color: #111;
     border-radius: 12px;
     box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
-    background-color: #ddd;
-    transition: box-shadow 150ms ease-in-out, background-color 150ms ease-in-out, opacity 150ms ease-in-out, transform 150ms ease-in-out;
+    background-color: #fff;
+    filter: grayscale(95%) brightness(95%);
+    transition: box-shadow 150ms ease-in, filter 150ms ease-in, opacity 150ms ease-in, transform 150ms ease-in;
     overflow: hidden;
 
     opacity: 0;
@@ -87,8 +92,12 @@ a:hover {
 }
 
 .window-is-animating {
-    transition: top 150ms ease-in-out, left 150ms ease-in-out, width 150ms ease-in-out, height 150ms ease-in-out, border-radius 150ms ease-in-out,
-        box-shadow 150ms ease-in-out, background-color 150ms ease-in-out, opacity 150ms ease-in-out, transform 150ms ease-in-out;
+    transition: top 150ms ease-in, left 150ms ease-in, width 150ms ease-in, height 150ms ease-in, border-radius 150ms ease-in,
+        box-shadow 150ms ease-in, filter 150ms ease-in, opacity 150ms ease-in, transform 150ms ease-in;
+}
+
+.window-is-animating > .window-body {
+    transition: height 150ms ease-in;
 }
 
 .window-is-visible {
@@ -136,13 +145,17 @@ a:hover {
     height: 48px !important;
 }
 
+.window-has-focus {
+    filter: none;
+    box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+}
+
 .window-header {
     position: relative;
     width: 100%;
     height: 48px;
-    border-bottom: 1px solid #bbb;
-    background-color: #ccc;
-    transition: background-color 150ms ease-in-out;
+    border-bottom: 1px solid #ccc;
+    background-color: #eee;
 }
 
 .window-header-title {
@@ -152,8 +165,6 @@ a:hover {
     line-height: 48px;
     font-size: 18px;
     font-weight: 500;
-    color: #555;
-    transition: color 150ms ease-in-out;
 }
 
 .window-header-controls {
@@ -162,7 +173,7 @@ a:hover {
     right: 0;
 }
 
-.window-header-button {
+.window-header-button, .toolbar-button {
     display: inline-block;
     padding: 8px;
     margin: 4px;
@@ -170,32 +181,17 @@ a:hover {
     border: 0;
     outline: 0;
     background-color: transparent;
+    transition: background-color 150ms ease-in;
 }
 
-.window-header-button:hover {
-    background-color: #aaa;
+.window-header-button:hover, .toolbar-button:hover {
+    background-color: #ccc;
 }
 
 .window-body {
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
-}
-
-.window-has-focus {
-    background-color: #fff;
-    box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
-}
-
-.window-has-focus > .window-header {
-    border-color: #ccc;
-    background-color: #eee;
-}
-
-.window-has-focus > .window-header > .window-header-title {
-    color: #111;
-}
-
-.window-has-focus > .window-header .window-header-button:hover {
-    background-color: #ccc;
 }
 
 .window-resize-north {
@@ -269,14 +265,19 @@ a:hover {
 }
 
 /* User interface styles */
-.container {
-    padding: 0 16px;
+.fill {
+    flex: 1;
 }
 
 .icon {
     display: block;
     width: 24px;
     height: 24px;
+}
+
+.container {
+    padding: 0 16px;
+    flex: 1;
 }
 
 .button {
@@ -289,10 +290,60 @@ a:hover {
     outline: 0;
     cursor: pointer;
     box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
-    transition: background-color 150ms ease-in-out, box-shadow 0.1s ease-in-out;
+    transition: background-color 150ms ease-in, box-shadow 0.1s ease-in;
 }
 
 .button:hover {
     background-color:rgba(0, 0, 0, 0.09);
     box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+}
+
+.toolbar {
+    display: flex;
+    height: 48px;
+    background-color: #f6f6f6;
+    border-bottom: 1px solid #ccc;
+}
+
+.seperator-vertical {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.seperator-horizontal {
+    display: flex;
+    flex: 1;
+}
+
+.editor {
+    display: flex;
+}
+
+.editor-line-numbers {
+    min-width: 32px;
+    padding: 0 8px;
+    margin-right: 16px;
+    color: #777;
+    text-align: right;
+}
+
+.editor-textarea {
+    flex: 1;
+    resize: none;
+    border: 0;
+    padding: 0 4px;
+    white-space: pre;
+    overflow-wrap: normal;
+    overflow-x: auto;
+}
+
+.output-right {
+    border-left: 1px solid #bbb;
+    background-color: #eee;
+}
+
+.output-bottom {
+    border-top: 1px solid #bbb;
+    background-color: #eee;
 }

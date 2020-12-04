@@ -880,11 +880,25 @@ Kora.Opcodes = {
 
 // Icons
 const Icons = {
+    // Window icons
     FOLD: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M16.59,5.41L15.17,4L12,7.17L8.83,4L7.41,5.41L12,10M7.41,18.59L8.83,20L12,16.83L15.17,20L16.58,18.59L12,14L7.41,18.59Z" /></svg>',
     EXPAND: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12,18.17L8.83,15L7.42,16.41L12,21L16.59,16.41L15.17,15M12,5.83L15.17,9L16.58,7.59L12,3L7.41,7.59L8.83,9L12,5.83Z" /></svg>',
     MAXIMIZE: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M4,4H20V20H4V4M6,8V18H18V8H6Z" /></svg>',
     RESTORE: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M4,8H8V4H20V16H16V20H4V8M16,8V14H18V6H10V8H16M6,12V18H14V12H6Z" /></svg>',
-    CLOSE: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M13.46,12L19,17.54V19H17.54L12,13.46L6.46,19H5V17.54L10.54,12L5,6.46V5H6.46L12,10.54L17.54,5H19V6.46L13.46,12Z" /></svg>'
+    CLOSE: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M13.46,12L19,17.54V19H17.54L12,13.46L6.46,19H5V17.54L10.54,12L5,6.46V5H6.46L12,10.54L17.54,5H19V6.46L13.46,12Z" /></svg>',
+
+    // Kora Assembler icons
+    CHECK: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M6.59,3.41L2,8L6.59,12.6L8,11.18L4.82,8L8,4.82L6.59,3.41M12.41,3.41L11,4.82L14.18,8L11,11.18L12.41,12.6L17,8L12.41,3.41M21.59,11.59L13.5,19.68L9.83,16L8.42,17.41L13.5,22.5L23,13L21.59,11.59Z" /></svg>',
+    LOAD: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M14,2L20,8V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V4A2,2 0 0,1 6,2H14M18,20V9H13V4H6V20H18M12,12L16,16H13.5V19H10.5V16H8L12,12Z" /></svg>',
+    LINE_NUMBERS: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M7,13V11H21V13H7M7,19V17H21V19H7M7,7V5H21V7H7M3,8V5H2V4H4V8H3M2,17V16H5V20H2V19H4V18.5H3V17.5H4V17H2M4.25,10A0.75,0.75 0 0,1 5,10.75C5,10.95 4.92,11.14 4.79,11.27L3.12,13H5V14H2V13.08L4,11H2V10H4.25Z" /></svg>',
+    ERROR: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M18.75 22.16L16 19.16L17.16 18L18.75 19.59L22.34 16L23.5 17.41L18.75 22.16M11 15H13V17H11V15M11 7H13V13H11V7M12 2C17.5 2 22 6.5 22 12L21.92 13.31C21.31 13.11 20.67 13 19.94 13L20 12C20 7.58 16.42 4 12 4C7.58 4 4 7.58 4 12C4 16.42 7.58 20 12 20C12.71 20 13.39 19.91 14.05 19.74C14.13 20.42 14.33 21.06 14.62 21.65C13.78 21.88 12.9 22 12 22C6.47 22 2 17.5 2 12C2 6.5 6.47 2 12 2Z"" /></svg>',
+    SIDEPANE_RIGHT: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M20 4H4A2 2 0 0 0 2 6V18A2 2 0 0 0 4 20H20A2 2 0 0 0 22 18V6A2 2 0 0 0 20 4M15 18H4V6H15Z" /></svg>',
+    SIDEPANE_BOTTOM: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M20 4H4A2 2 0 0 0 2 6V18A2 2 0 0 0 4 20H20A2 2 0 0 0 22 18V6A2 2 0 0 0 20 4M20 13H4V6H20Z" /></svg>',
+
+    // Kora Simulator icons
+    RESET: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z" /></svg>',
+    AUTO_CLOCK: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M15,4A8,8 0 0,1 23,12A8,8 0 0,1 15,20A8,8 0 0,1 7,12A8,8 0 0,1 15,4M15,6A6,6 0 0,0 9,12A6,6 0 0,0 15,18A6,6 0 0,0 21,12A6,6 0 0,0 15,6M14,8H15.5V11.78L17.83,14.11L16.77,15.17L14,12.4V8M2,18A1,1 0 0,1 1,17A1,1 0 0,1 2,16H5.83C6.14,16.71 6.54,17.38 7,18H2M3,13A1,1 0 0,1 2,12A1,1 0 0,1 3,11H5.05L5,12L5.05,13H3M4,8A1,1 0 0,1 3,7A1,1 0 0,1 4,6H7C6.54,6.62 6.14,7.29 5.83,8H4Z" /></svg>',
+    CLOCK_PULSE: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 20C16.42 20 20 16.42 20 12S16.42 4 12 4 4 7.58 4 12 7.58 20 12 20M12 2C17.5 2 22 6.5 22 12S17.5 22 12 22C6.47 22 2 17.5 2 12C2 6.5 6.5 2 12 2M12.5 13V13H11V7H12.5V11.26L16.2 9.13L16.95 10.43L12.5 13Z" /></svg>',
 };
 
 // Windows
@@ -994,6 +1008,13 @@ window.addEventListener('mouseup', function (event) {
     }
 });
 
+// Disable CTRL+S
+document.addEventListener('keydown', function (event) {
+    if ((navigator.platform.match('Mac') ? event.metaKey : event.ctrlKey) && event.key == 's') {
+        event.preventDefault();
+    }
+});
+
 // Window class
 class Window {
     constructor ({
@@ -1012,7 +1033,7 @@ class Window {
         this.x = x;
 
         if (y == -1) {
-            y = (window.innerHeight - height) / 2;
+            y = (window.innerHeight - (height + Window.HEADER_HEIGHT)) / 2;
         }
         this.y = y;
 
@@ -1101,6 +1122,7 @@ class Window {
 
         this.windowHeaderFoldButtonElement = document.createElement('button');
         this.windowHeaderFoldButtonElement.className = 'window-header-button';
+        this.windowHeaderFoldButtonElement.title = 'Fold';
         if (!foldable) {
             this.windowHeaderCloseButtonElement.disabled = true;
         }
@@ -1112,6 +1134,7 @@ class Window {
 
         this.windowHeaderMaximizeButtonElement = document.createElement('button');
         this.windowHeaderMaximizeButtonElement.className = 'window-header-button';
+        this.windowHeaderMaximizeButtonElement.title = 'Maximize';
         if (!maximizable) {
             this.windowHeaderCloseButtonElement.disabled = true;
         }
@@ -1123,6 +1146,7 @@ class Window {
 
         this.windowHeaderCloseButtonElement = document.createElement('button');
         this.windowHeaderCloseButtonElement.className = 'window-header-button';
+        this.windowHeaderCloseButtonElement.title = 'Close';
         if (!closable) {
             this.windowHeaderCloseButtonElement.disabled = true;
         }
@@ -1237,9 +1261,11 @@ class Window {
 
         if (this.folded) {
             this.windowElement.classList.add('window-is-folded');
+            this.windowHeaderFoldButtonElement.title = 'Expand';
             this.windowHeaderFoldButtonElement.innerHTML = Icons.EXPAND;
         } else {
             this.windowElement.classList.remove('window-is-folded');
+            this.windowHeaderFoldButtonElement.title = 'Fold';
             this.windowHeaderFoldButtonElement.innerHTML = Icons.FOLD;
         }
     }
@@ -1251,9 +1277,11 @@ class Window {
 
         if (this.maximized) {
             this.windowElement.classList.add('window-is-maximized');
+            this.windowHeaderMaximizeButtonElement.title = 'Restore';
             this.windowHeaderMaximizeButtonElement.innerHTML = Icons.RESTORE;
         } else {
             this.windowElement.classList.remove('window-is-maximized');
+            this.windowHeaderMaximizeButtonElement.title = 'Maximize';
             this.windowHeaderMaximizeButtonElement.innerHTML = Icons.MAXIMIZE;
         }
     }
@@ -1355,12 +1383,39 @@ function openLauncher () {
             closable: false,
 
             onCreate: function (body) {
-                body.innerHTML = '<div class="container">' +
-                    '<h2>Welcome to the Kora Web Environment!</h2>' +
-                    '<p>You can open diffrent tools to create and test programs for the Kora processor platform</p>' +
-                    '<p><button class="button" onclick="openAssembler()">Open Kora Assembler</button></p>' +
-                    '<p><button class="button" onclick="openSimulator()">Open Kora Simulator</button></p>' +
-                    '</div>';
+                const containerElement = document.createElement('div');
+                containerElement.className = 'container';
+                body.appendChild(containerElement);
+
+                const titleElement = document.createElement('h2');
+                titleElement.textContent = 'Welcome to the Kora Web Environment!';
+                containerElement.appendChild(titleElement);
+
+                const infoElement = document.createElement('p');
+                infoElement.textContent = 'You can open different tools to create and test programs for the Kora processor platform, you can drag the windows around to create an environment where you can be productive...';
+                containerElement.appendChild(infoElement);
+
+                const assemblerLineElement = document.createElement('p');
+                containerElement.appendChild(assemblerLineElement);
+
+                const assemblerButtonElement = document.createElement('button');
+                assemblerButtonElement.className = 'button';
+                assemblerButtonElement.textContent = 'Open Kora Assembler';
+                assemblerButtonElement.addEventListener('click', function () {
+                    openAssembler();
+                });
+                assemblerLineElement.appendChild(assemblerButtonElement);
+
+                const simulatorLineElement = document.createElement('p');
+                containerElement.appendChild(simulatorLineElement);
+
+                const simulatorButtonElement = document.createElement('button');
+                simulatorButtonElement.className = 'button';
+                simulatorButtonElement.textContent = 'Open Kora Simulator';
+                simulatorButtonElement.addEventListener('click', function () {
+                    openSimulator();
+                });
+                simulatorLineElement.appendChild(simulatorButtonElement);
             }
         });
     } else {
@@ -1374,25 +1429,195 @@ openLauncher();
 // ################################# KORA ASSEMBLER WINDOW ################################
 // ########################################################################################
 
+class Editor {
+    constructor ({ name, rootElement }) {
+        this.name = name;
+        this.rootElement = rootElement;
+
+        this.editorElement = document.createElement('div');
+        this.editorElement.className = 'editor';
+        rootElement.appendChild(this.editorElement);
+
+        this.lineNumbersElement = document.createElement('div');
+        this.lineNumbersElement.className = 'editor-line-numbers';
+        this.editorElement.appendChild(this.lineNumbersElement);
+
+        const updateLineNumbers = () => {
+            this.lineNumbersElement.innerHTML = '';
+            const lines = this.textareaElement.value.split('\n');
+            for (let i = 0; i < lines.length; i++) {
+                this.lineNumbersElement.innerHTML += '<div>' + (i + 1) + '</div>';
+            }
+        };
+
+        this.textareaElement = document.createElement('textarea');
+        this.textareaElement.className = 'editor-textarea';
+        this.textareaElement.setAttribute('autocomplete', 'off');
+        this.textareaElement.setAttribute('autocorrect', 'off');
+        this.textareaElement.setAttribute('autocapitalize', 'off');
+        this.textareaElement.setAttribute('spellcheck', 'false');
+        if (localStorage.getItem(name) != null) {
+            this.textareaElement.value = localStorage.getItem(name);
+            updateLineNumbers();
+        }
+        this.textareaElement.addEventListener('keydown', (event) => {
+            if (event.key == 'Tab') {
+                event.preventDefault();
+
+                const selectionStart = this.textareaElement.selectionStart;
+                const selectionEnd = this.textareaElement.selectionEnd;
+
+                // BUG
+                this.textareaElement.value = this.textareaElement.value.substring(0, selectionStart) + '    ' + this.textareaElement.value.substring(selectionEnd);
+                this.textareaElement.selectionStart = this.textareaElement.selectionEnd = selectionStart + 4;
+
+                updateLineNumbers();
+                localStorage.setItem(name, this.textareaElement.value);
+            }
+
+            if (event.key == 'Backspace') {
+                const selectionStart = this.textareaElement.selectionStart;
+                const selectionEnd = this.textareaElement.selectionEnd;
+
+                if (selectionStart == selectionEnd && this.textareaElement.value.substring(selectionStart - 4, selectionStart) == '    ') {
+                    event.preventDefault();
+
+                    this.textareaElement.value = this.textareaElement.value.substring(0, selectionStart - 4) + this.textareaElement.value.substring(selectionEnd);
+                    this.textareaElement.selectionStart = this.textareaElement.selectionEnd = selectionStart - 4;
+
+                    updateLineNumbers();
+                    localStorage.setItem(name, this.textareaElement.value);
+                }
+            }
+
+            if (event.key == 'Enter') {
+                // event.preventDefault();
+
+                // const selectionStart = this.textareaElement.selectionStart;
+                // const selectionEnd = this.textareaElement.selectionEnd;
+
+                // TODO
+
+                // localStorage.setItem(name, target.value);
+
+            }
+
+            if ((navigator.platform.match('Mac') ? event.metaKey : event.ctrlKey) && event.key == 's') {
+                event.preventDefault();
+
+                // Right trim all new lines
+                const lines = this.textareaElement.value.split('\n');
+                for (let i = 0; i < lines.length; i++) {
+                    lines[i] = lines[i].replace(/\s+$/, '');
+                }
+
+                // Insert final epty new line
+                if (lines.length == 0 || lines[lines.length - 1] != '') {
+                    lines.push('');
+                }
+
+                // const selectionStart = this.textareaElement.selectionStart;
+                this.textareaElement.value = lines.join('\n');
+                // this.textareaElement.selectionStart = this.textareaElement.selectionEnd = selectionStart;
+
+                updateLineNumbers();
+                localStorage.setItem(name, this.textareaElement.value);
+            }
+        });
+        this.textareaElement.addEventListener('input', (event) => {
+            updateLineNumbers();
+            localStorage.setItem(name, this.textareaElement.value);
+        });
+        this.editorElement.appendChild(this.textareaElement);
+    }
+}
+
 let assemblerWindow = undefined;
 
 function openAssembler () {
     if (assemblerWindow == undefined || assemblerWindow.closed) {
         assemblerWindow = new Window({
             title: 'Kora Assembler',
-            width: 800,
-            height: 600,
+            width: 1024,
+            height: 768,
 
             onCreate: function (body) {
-                body.innerHTML = '<div class="container">' +
-                    '<h2>Kora Assembler</h2>' +
-                    '</div>';
+                const toolbarElement = document.createElement('div');
+                toolbarElement.className = 'toolbar';
+                body.appendChild(toolbarElement);
+
+                const checkButtonElement = document.createElement('button');
+                checkButtonElement.className = 'toolbar-button';
+                checkButtonElement.title = 'Assembler & Check';
+                checkButtonElement.innerHTML = Icons.CHECK;
+                toolbarElement.appendChild(checkButtonElement);
+
+                const loadButtonElement = document.createElement('button');
+                loadButtonElement.className = 'toolbar-button';
+                loadButtonElement.title = 'Assembler & Load';
+                loadButtonElement.innerHTML = Icons.LOAD;
+                toolbarElement.appendChild(loadButtonElement);
+
+                const toolbarFillElement = document.createElement('div');
+                toolbarFillElement.className = 'fill';
+                toolbarElement.appendChild(toolbarFillElement);
+
+                const lineNumbersToggleButtonElement = document.createElement('button');
+                lineNumbersToggleButtonElement.className = 'toolbar-button';
+                lineNumbersToggleButtonElement.title = 'Hide line numbers';
+                lineNumbersToggleButtonElement.innerHTML = Icons.LINE_NUMBERS;
+                toolbarElement.appendChild(lineNumbersToggleButtonElement);
+
+                const errorsToggleButtonElement = document.createElement('button');
+                errorsToggleButtonElement.className = 'toolbar-button';
+                errorsToggleButtonElement.title = 'Treat all warnings as errors';
+                errorsToggleButtonElement.innerHTML = Icons.ERROR;
+                toolbarElement.appendChild(errorsToggleButtonElement);
+
+                const biraryOutputToggleButtonElement = document.createElement('button');
+                biraryOutputToggleButtonElement.className = 'toolbar-button';
+                biraryOutputToggleButtonElement.title = 'Hide binary Output';
+                biraryOutputToggleButtonElement.innerHTML = Icons.SIDEPANE_RIGHT;
+                toolbarElement.appendChild(biraryOutputToggleButtonElement);
+
+                const assemblerOutputToggleButtonElement = document.createElement('button');
+                assemblerOutputToggleButtonElement.className = 'toolbar-button';
+                assemblerOutputToggleButtonElement.title = 'Hide assembler Output';
+                assemblerOutputToggleButtonElement.innerHTML = Icons.SIDEPANE_BOTTOM;
+                toolbarElement.appendChild(assemblerOutputToggleButtonElement);
+
+                const verticalSeperatorElement = document.createElement('div');
+                verticalSeperatorElement.className = 'seperator-vertical';
+                body.appendChild(verticalSeperatorElement);
+
+                const horizontalSeperatorElement = document.createElement('div');
+                horizontalSeperatorElement.className = 'seperator-horizontal';
+                horizontalSeperatorElement.style.flex = '80';
+                verticalSeperatorElement.appendChild(horizontalSeperatorElement);
+
+                const editor = new Editor({
+                    name: 'assembler-editor',
+                    rootElement: horizontalSeperatorElement
+                });
+                editor.editorElement.style.flex = '75';
+
+                const binaryOutputElement = document.createElement('pre');
+                binaryOutputElement.className = 'output-right';
+                binaryOutputElement.style.flex = '25';
+                horizontalSeperatorElement.appendChild(binaryOutputElement);
+
+                const errorsOutputElement = document.createElement('pre');
+                errorsOutputElement.className = 'output-bottom';
+                errorsOutputElement.style.flex = '20';
+                verticalSeperatorElement.appendChild(errorsOutputElement);
             }
         });
     } else {
         assemblerWindow.focus();
     }
 }
+
+openAssembler();
 
 // ########################################################################################
 // ################################# KORA SIMULATOR WINDOW ################################
@@ -1408,10 +1633,43 @@ function openSimulator () {
             height: 600,
 
             onCreate: function (body) {
-                body.innerHTML = '<div class="container">' +
-                    '<h2>Kora Simulator</h2>' +
-                    '<pre></pre>' +
-                    '</div>';
+                const toolbarElement = document.createElement('div');
+                toolbarElement.className = 'toolbar';
+                body.appendChild(toolbarElement);
+
+                const resetButtonElement = document.createElement('button');
+                resetButtonElement.className = 'toolbar-button';
+                resetButtonElement.title = 'Reset the simulation';
+                resetButtonElement.innerHTML = Icons.RESET;
+                toolbarElement.appendChild(resetButtonElement);
+
+                const autoClockToggleButtonElement = document.createElement('button');
+                autoClockToggleButtonElement.className = 'toolbar-button';
+                autoClockToggleButtonElement.title = 'Enable auto clock';
+                autoClockToggleButtonElement.innerHTML = Icons.AUTO_CLOCK;
+                toolbarElement.appendChild(autoClockToggleButtonElement);
+
+                const clockSpeedSelectorElement = document.createElement('div');
+                clockSpeedSelectorElement.className = 'toolbar-button';
+                clockSpeedSelectorElement.innerHTML = 'Clock speed';
+                toolbarElement.appendChild(clockSpeedSelectorElement);
+
+                const clockPulseButtonElement = document.createElement('button');
+                clockPulseButtonElement.className = 'toolbar-button';
+                clockPulseButtonElement.title = 'Do a clock pluse';
+                clockPulseButtonElement.innerHTML = Icons.CLOCK_PULSE;
+                toolbarElement.appendChild(clockPulseButtonElement);
+
+                const containerElement = document.createElement('div');
+                containerElement.className = 'container';
+                body.appendChild(containerElement);
+
+                const titleElement = document.createElement('h2');
+                titleElement.textContent = 'Kora Simulator';
+                containerElement.appendChild(titleElement);
+
+                const outputElement = document.createElement('pre');
+                containerElement.appendChild(outputElement);
 
                 // Create ROM the hard way
                 const rom = new Uint16Array((1 * 256) / 2);
@@ -1439,7 +1697,7 @@ function openSimulator () {
                 rom[p++] = (Kora.Opcodes.OR << 10) | (Kora.Mode.IMMEDIATE_NORMAL << 8) | (Kora.Registers.FLAGS << 4) | (Kora.Conditions.ALWAYS);
                 rom[p++] = 1 << Kora.Flags.HALT;
 
-                const bus = new Bus({ rom, ramSize: 6 * 512, outputElement: body.children[0].children[1] });
+                const bus = new Bus({ rom, ramSize: 6 * 512, outputElement });
 
                 bus.reset();
 
