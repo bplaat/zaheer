@@ -890,8 +890,9 @@ const Icons = {
     // Kora Assembler icons
     CHECK: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M6.59,3.41L2,8L6.59,12.6L8,11.18L4.82,8L8,4.82L6.59,3.41M12.41,3.41L11,4.82L14.18,8L11,11.18L12.41,12.6L17,8L12.41,3.41M21.59,11.59L13.5,19.68L9.83,16L8.42,17.41L13.5,22.5L23,13L21.59,11.59Z" /></svg>',
     LOAD: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M14,2L20,8V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V4A2,2 0 0,1 6,2H14M18,20V9H13V4H6V20H18M12,12L16,16H13.5V19H10.5V16H8L12,12Z" /></svg>',
+    ERROR: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M18.75 22.16L16 19.16L17.16 18L18.75 19.59L22.34 16L23.5 17.41L18.75 22.16M11 15H13V17H11V15M11 7H13V13H11V7M12 2C17.5 2 22 6.5 22 12L21.92 13.31C21.31 13.11 20.67 13 19.94 13L20 12C20 7.58 16.42 4 12 4C7.58 4 4 7.58 4 12C4 16.42 7.58 20 12 20C12.71 20 13.39 19.91 14.05 19.74C14.13 20.42 14.33 21.06 14.62 21.65C13.78 21.88 12.9 22 12 22C6.47 22 2 17.5 2 12C2 6.5 6.47 2 12 2Z" /></svg>',
+    FORMAT: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M19.36,2.72L20.78,4.14L15.06,9.85C16.13,11.39 16.28,13.24 15.38,14.44L9.06,8.12C10.26,7.22 12.11,7.37 13.65,8.44L19.36,2.72M5.93,17.57C3.92,15.56 2.69,13.16 2.35,10.92L7.23,8.83L14.67,16.27L12.58,21.15C10.34,20.81 7.94,19.58 5.93,17.57Z" /></svg>',
     LINE_NUMBERS: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M7,13V11H21V13H7M7,19V17H21V19H7M7,7V5H21V7H7M3,8V5H2V4H4V8H3M2,17V16H5V20H2V19H4V18.5H3V17.5H4V17H2M4.25,10A0.75,0.75 0 0,1 5,10.75C5,10.95 4.92,11.14 4.79,11.27L3.12,13H5V14H2V13.08L4,11H2V10H4.25Z" /></svg>',
-    ERROR: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M18.75 22.16L16 19.16L17.16 18L18.75 19.59L22.34 16L23.5 17.41L18.75 22.16M11 15H13V17H11V15M11 7H13V13H11V7M12 2C17.5 2 22 6.5 22 12L21.92 13.31C21.31 13.11 20.67 13 19.94 13L20 12C20 7.58 16.42 4 12 4C7.58 4 4 7.58 4 12C4 16.42 7.58 20 12 20C12.71 20 13.39 19.91 14.05 19.74C14.13 20.42 14.33 21.06 14.62 21.65C13.78 21.88 12.9 22 12 22C6.47 22 2 17.5 2 12C2 6.5 6.47 2 12 2Z"" /></svg>',
     SIDEPANE_RIGHT: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M20 4H4A2 2 0 0 0 2 6V18A2 2 0 0 0 4 20H20A2 2 0 0 0 22 18V6A2 2 0 0 0 20 4M15 18H4V6H15Z" /></svg>',
     SIDEPANE_BOTTOM: '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M20 4H4A2 2 0 0 0 2 6V18A2 2 0 0 0 4 20H20A2 2 0 0 0 22 18V6A2 2 0 0 0 20 4M20 13H4V6H20Z" /></svg>',
 
@@ -1010,7 +1011,7 @@ window.addEventListener('mouseup', function (event) {
 
 // Disable CTRL+S
 document.addEventListener('keydown', function (event) {
-    if ((navigator.platform.match('Mac') ? event.metaKey : event.ctrlKey) && event.key == 's') {
+    if ((navigator.platform.match('Mac') ? event.metaKey : event.ctrlKey) && event.key.toLowerCase() == 's') {
         event.preventDefault();
     }
 });
@@ -1430,25 +1431,19 @@ openLauncher();
 // ########################################################################################
 
 class Editor {
-    constructor ({ name, rootElement }) {
+    constructor ({ name, indentationSpaces = 4, rootElement }) {
         this.name = name;
+        this.indentationSpaces = indentationSpaces;
         this.rootElement = rootElement;
 
         this.editorElement = document.createElement('div');
         this.editorElement.className = 'editor';
         rootElement.appendChild(this.editorElement);
 
-        this.lineNumbersElement = document.createElement('div');
+        this.lineNumbersElement = document.createElement('textarea');
         this.lineNumbersElement.className = 'editor-line-numbers';
+        this.lineNumbersElement.disabled = true;
         this.editorElement.appendChild(this.lineNumbersElement);
-
-        const updateLineNumbers = () => {
-            this.lineNumbersElement.innerHTML = '';
-            const lines = this.textareaElement.value.split('\n');
-            for (let i = 0; i < lines.length; i++) {
-                this.lineNumbersElement.innerHTML += '<div>' + (i + 1) + '</div>';
-            }
-        };
 
         this.textareaElement = document.createElement('textarea');
         this.textareaElement.className = 'editor-textarea';
@@ -1456,79 +1451,271 @@ class Editor {
         this.textareaElement.setAttribute('autocorrect', 'off');
         this.textareaElement.setAttribute('autocapitalize', 'off');
         this.textareaElement.setAttribute('spellcheck', 'false');
+        this.textareaElement.addEventListener('scroll', () => {
+            this.lineNumbersElement.scrollTop = this.textareaElement.scrollTop;
+        });
+
+        // The undo back stack
+        this.previousStates = [];
+
+        this.textareaElement.addEventListener('keydown', (event) => {
+            // Handle the normal way
+            if ((navigator.platform.match('Mac') ? event.metaKey : event.ctrlKey) && event.key.toLowerCase() == 'a') {
+                return;
+            }
+
+            if ((navigator.platform.match('Mac') ? event.metaKey : event.ctrlKey) && event.key.toLowerCase() == 'c') {
+                return;
+            }
+
+            if ((navigator.platform.match('Mac') ? event.metaKey : event.ctrlKey) && event.key.toLowerCase() == 'v') {
+                this.saveState();
+                return;
+            }
+
+            if (event.key == 'ArrowUp' || event.key == 'ArrowLeft' || event.key == 'ArrowRight' || event.key == 'ArrowDown') {
+                return;
+            }
+
+            // Overide the rest
+            event.preventDefault();
+
+            const selectionStart = this.textareaElement.selectionStart;
+            const selectionEnd = this.textareaElement.selectionEnd;
+
+            if (this.previousStates.length == 0) {
+                this.saveState();
+            }
+
+            // Undo
+            if ((navigator.platform.match('Mac') ? event.metaKey : event.ctrlKey) && event.key.toLowerCase() == 'z') {
+                if (this.previousStates.length > 0) {
+                    const previousState = this.previousStates.pop();
+                    this.textareaElement.value = previousState.text;
+                    this.textareaElement.selectionStart = previousState.selectionStart;
+                    this.textareaElement.selectionEnd = previousState.selectionEnd;
+                    this.updateState();
+                }
+                return;
+            }
+
+            // (Un)comment code
+            if ((navigator.platform.match('Mac') ? event.metaKey : event.ctrlKey) && (event.key == ';' || event.key == '/')) {
+                this.saveState();
+
+                const startClip = this.textareaElement.value.substring(0, selectionStart).lastIndexOf('\n') + 1;
+                const endClip = selectionEnd + this.textareaElement.value.substring(selectionEnd).indexOf('\n');
+                const clip = this.textareaElement.value.substring(startClip, endClip);
+
+                const commentPrefix = '; ';
+                if (clip.substring(0, commentPrefix.length) == commentPrefix) {
+                    this.textareaElement.value = this.textareaElement.value.substring(0, startClip) +
+                        clip.substring(commentPrefix.length).replace(new RegExp('\n' + commentPrefix, 'g'), '\n') +
+                        this.textareaElement.value.substring(endClip);
+
+                    this.textareaElement.selectionStart = selectionStart - commentPrefix.length;
+                    this.textareaElement.selectionEnd = selectionEnd - clip.split('\n').length * commentPrefix.length;
+                } else {
+                    this.textareaElement.value = this.textareaElement.value.substring(0, startClip) +
+                    commentPrefix + clip.replace(/\n/g, '\n' + commentPrefix) +
+                        this.textareaElement.value.substring(endClip);
+
+                    this.textareaElement.selectionStart = selectionStart + commentPrefix.length;
+                    this.textareaElement.selectionEnd = selectionEnd + clip.split('\n').length * commentPrefix.length;
+                }
+
+                this.updateState();
+                return;
+            }
+
+            // Format code
+            if ((navigator.platform.match('Mac') ? event.metaKey : event.ctrlKey) && event.key.toLowerCase() == 'f') {
+                this.format();
+            }
+
+            // Tab with indentation
+            if (event.key == 'Tab') {
+                this.saveState();
+
+                if (this.textareaElement.value.substring(selectionStart, selectionEnd).indexOf('\n') != -1) {
+                    const startClip = this.textareaElement.value.substring(0, selectionStart).lastIndexOf('\n') + 1;
+                    const endClip = selectionEnd + this.textareaElement.value.substring(selectionEnd).indexOf('\n');
+                    const clip = this.textareaElement.value.substring(startClip, endClip);
+
+                    this.textareaElement.value = this.textareaElement.value.substring(0, startClip) +
+                        ' '.repeat(indentationSpaces) + clip.replace(/\n/g, '\n' + ' '.repeat(indentationSpaces)) +
+                        this.textareaElement.value.substring(endClip);
+
+                    this.textareaElement.selectionStart = selectionStart + indentationSpaces;
+                    this.textareaElement.selectionEnd = selectionEnd + clip.split('\n').length * indentationSpaces;
+                }
+                else {
+                    this.textareaElement.value = this.textareaElement.value.substring(0, selectionStart) + ' '.repeat(indentationSpaces) + this.textareaElement.value.substring(selectionEnd);
+                    this.textareaElement.selectionStart = this.textareaElement.selectionEnd = selectionStart + indentationSpaces;
+                }
+
+                this.updateState();
+                return;
+            }
+
+            // Backspace with indentation
+            if (event.key == 'Backspace') {
+                this.saveState();
+                if (selectionStart == selectionEnd) {
+                    if (this.textareaElement.value.substring(selectionStart - indentationSpaces, selectionStart) == ' '.repeat(indentationSpaces)) {
+                        this.textareaElement.value = this.textareaElement.value.substring(0, selectionStart - indentationSpaces) + this.textareaElement.value.substring(selectionEnd);
+                        this.textareaElement.selectionStart = this.textareaElement.selectionEnd = selectionStart - indentationSpaces;
+                    } else {
+                        this.textareaElement.value = this.textareaElement.value.substring(0, selectionStart - 1) + this.textareaElement.value.substring(selectionEnd);
+                        this.textareaElement.selectionStart = this.textareaElement.selectionEnd = selectionStart - 1;
+                    }
+                } else {
+                    this.textareaElement.value = this.textareaElement.value.substring(0, selectionStart) + this.textareaElement.value.substring(selectionEnd);
+                    this.textareaElement.selectionStart = this.textareaElement.selectionEnd = selectionStart;
+                }
+                this.updateState();
+                return;
+            }
+
+            // Delete with indentation
+            if (event.key == 'Delete') {
+                this.saveState();
+                if (selectionStart == selectionEnd) {
+                    if (this.textareaElement.value.substring(selectionStart, selectionStart + indentationSpaces) == ' '.repeat(indentationSpaces)) {
+                        this.textareaElement.value = this.textareaElement.value.substring(0, selectionStart) + this.textareaElement.value.substring(selectionEnd + indentationSpaces);
+                        this.textareaElement.selectionStart = this.textareaElement.selectionEnd = selectionStart;
+                    } else {
+                        this.textareaElement.value = this.textareaElement.value.substring(0, selectionStart) + this.textareaElement.value.substring(selectionEnd + 1);
+                        this.textareaElement.selectionStart = this.textareaElement.selectionEnd = selectionStart;
+                    }
+                } else {
+                    this.textareaElement.value = this.textareaElement.value.substring(0, selectionStart) + this.textareaElement.value.substring(selectionEnd);
+                    this.textareaElement.selectionStart = this.textareaElement.selectionEnd = selectionStart;
+                }
+                this.updateState();
+                return;
+            }
+
+            // Enter with indentation
+            if (event.key == 'Enter') {
+                this.saveState();
+                const before = this.textareaElement.value.substring(0, selectionStart);
+                const line = before.substring(before.lastIndexOf('\n') + 1);
+
+                let indentation = 0;
+                while (line.charAt(indentation) == ' ') {
+                    indentation++;
+                }
+
+                if (line.charAt(line.length - 1) == ':') {
+                    indentation += indentationSpaces;
+                }
+
+                this.textareaElement.value = this.textareaElement.value.substring(0, selectionStart) + '\n' + ' '.repeat(indentation) + this.textareaElement.value.substring(selectionEnd);
+                this.textareaElement.selectionStart = this.textareaElement.selectionEnd = selectionStart + 1 + indentation;
+                this.updateState();
+                return;
+            }
+
+            // All other characters
+            if (event.key.length == 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+                if (event.key == ' ') {
+                    this.saveState();
+                }
+
+                this.textareaElement.value = this.textareaElement.value.substring(0, selectionStart) + event.key + this.textareaElement.value.substring(selectionEnd);
+                this.textareaElement.selectionStart = this.textareaElement.selectionEnd = selectionStart + 1;
+                this.updateState();
+            }
+        });
+
+        // Overide default paste action
+        this.textareaElement.addEventListener('paste', (event) => {
+            event.preventDefault();
+
+            const selectionStart = this.textareaElement.selectionStart;
+            const selectionEnd = this.textareaElement.selectionEnd;
+            const text = (event.clipboardData || window.clipboardData).getData('text');
+
+            this.textareaElement.value = this.textareaElement.value.substring(0, selectionStart) + text + this.textareaElement.value.substring(selectionEnd);
+            this.textareaElement.selectionStart = this.textareaElement.selectionEnd = selectionStart + text.length;
+
+            this.updateState();
+        });
+
+        this.editorElement.appendChild(this.textareaElement);
+
+        // Load stored code
         if (localStorage.getItem(name) != null) {
             this.textareaElement.value = localStorage.getItem(name);
-            updateLineNumbers();
+            this.updateState();
         }
-        this.textareaElement.addEventListener('keydown', (event) => {
-            if (event.key == 'Tab') {
-                event.preventDefault();
+    }
 
-                const selectionStart = this.textareaElement.selectionStart;
-                const selectionEnd = this.textareaElement.selectionEnd;
-
-                // BUG
-                this.textareaElement.value = this.textareaElement.value.substring(0, selectionStart) + '    ' + this.textareaElement.value.substring(selectionEnd);
-                this.textareaElement.selectionStart = this.textareaElement.selectionEnd = selectionStart + 4;
-
-                updateLineNumbers();
-                localStorage.setItem(name, this.textareaElement.value);
-            }
-
-            if (event.key == 'Backspace') {
-                const selectionStart = this.textareaElement.selectionStart;
-                const selectionEnd = this.textareaElement.selectionEnd;
-
-                if (selectionStart == selectionEnd && this.textareaElement.value.substring(selectionStart - 4, selectionStart) == '    ') {
-                    event.preventDefault();
-
-                    this.textareaElement.value = this.textareaElement.value.substring(0, selectionStart - 4) + this.textareaElement.value.substring(selectionEnd);
-                    this.textareaElement.selectionStart = this.textareaElement.selectionEnd = selectionStart - 4;
-
-                    updateLineNumbers();
-                    localStorage.setItem(name, this.textareaElement.value);
-                }
-            }
-
-            if (event.key == 'Enter') {
-                // event.preventDefault();
-
-                // const selectionStart = this.textareaElement.selectionStart;
-                // const selectionEnd = this.textareaElement.selectionEnd;
-
-                // TODO
-
-                // localStorage.setItem(name, target.value);
-
-            }
-
-            if ((navigator.platform.match('Mac') ? event.metaKey : event.ctrlKey) && event.key == 's') {
-                event.preventDefault();
-
-                // Right trim all new lines
-                const lines = this.textareaElement.value.split('\n');
-                for (let i = 0; i < lines.length; i++) {
-                    lines[i] = lines[i].replace(/\s+$/, '');
-                }
-
-                // Insert final epty new line
-                if (lines.length == 0 || lines[lines.length - 1] != '') {
-                    lines.push('');
-                }
-
-                // const selectionStart = this.textareaElement.selectionStart;
-                this.textareaElement.value = lines.join('\n');
-                // this.textareaElement.selectionStart = this.textareaElement.selectionEnd = selectionStart;
-
-                updateLineNumbers();
-                localStorage.setItem(name, this.textareaElement.value);
-            }
+    // Save textarea state
+    saveState () {
+        this.previousStates.push({
+            text: this.textareaElement.value,
+            selectionStart: this.textareaElement.selectionStart,
+            selectionEnd: this.textareaElement.selectionEnd
         });
-        this.textareaElement.addEventListener('input', (event) => {
-            updateLineNumbers();
-            localStorage.setItem(name, this.textareaElement.value);
-        });
-        this.editorElement.appendChild(this.textareaElement);
+        if (this.previousStates.length > 16) this.previousStates.shift();
+    }
+
+    // Update lines and save text
+    updateState () {
+        // Update line numbers
+        const lines = this.textareaElement.value.split('\n');
+
+        let number = lines.length > 1 ? 1 : Math.ceil(Math.log10(lines.length));
+        if (number < 3) number = 3;
+        this.lineNumbersElement.cols = number;
+
+        this.lineNumbersElement.value = '';
+        for (let i = 0; i < lines.length; i++) {
+            this.lineNumbersElement.value += (i + 1) + '\n';
+        }
+
+        this.lineNumbersElement.scrollTop = this.textareaElement.scrollTop;
+
+        // Save text
+        localStorage.setItem(name, this.textareaElement.value);
+    }
+
+    // Format code in editor
+    format () {
+        this.saveState();
+
+        // Right trim all lines
+        const lines = this.textareaElement.value.split('\n');
+        for (let i = 0; i < lines.length; i++) {
+            if (lines[i].length > 0) {
+                let remove = 0;
+                for (let j = lines[i].length - 1; j >= 0; j--) {
+                    if (lines[i].charAt(j) == ' ') {
+                        remove++;
+                    } else {
+                        break;
+                    }
+                }
+                lines[i] = lines[i].substring(0, lines[i].length - remove);
+            }
+        }
+
+        // Trim final empty lines
+        while (lines[lines.length - 1] == '') {
+            lines.pop();
+        }
+
+        // Insert final empty new line
+        if (lines.length == 0 || lines[lines.length - 1] != '') {
+            lines.push('');
+        }
+
+        this.textareaElement.value = lines.join('\n');
+        this.textareaElement.selectionStart = this.textareaElement.selectionEnd = this.textareaElement.value.length;
+
+        this.updateState();
     }
 }
 
@@ -1558,21 +1745,30 @@ function openAssembler () {
                 loadButtonElement.innerHTML = Icons.LOAD;
                 toolbarElement.appendChild(loadButtonElement);
 
+                const formatButtonElement = document.createElement('button');
+                formatButtonElement.className = 'toolbar-button';
+                formatButtonElement.title = 'Format code (CTRL+F)';
+                formatButtonElement.innerHTML = Icons.FORMAT;
+                formatButtonElement.addEventListener('click', () => {
+                    this.editor.format();
+                });
+                toolbarElement.appendChild(formatButtonElement);
+
                 const toolbarFillElement = document.createElement('div');
                 toolbarFillElement.className = 'fill';
                 toolbarElement.appendChild(toolbarFillElement);
-
-                const lineNumbersToggleButtonElement = document.createElement('button');
-                lineNumbersToggleButtonElement.className = 'toolbar-button';
-                lineNumbersToggleButtonElement.title = 'Hide line numbers';
-                lineNumbersToggleButtonElement.innerHTML = Icons.LINE_NUMBERS;
-                toolbarElement.appendChild(lineNumbersToggleButtonElement);
 
                 const errorsToggleButtonElement = document.createElement('button');
                 errorsToggleButtonElement.className = 'toolbar-button';
                 errorsToggleButtonElement.title = 'Treat all warnings as errors';
                 errorsToggleButtonElement.innerHTML = Icons.ERROR;
                 toolbarElement.appendChild(errorsToggleButtonElement);
+
+                const lineNumbersToggleButtonElement = document.createElement('button');
+                lineNumbersToggleButtonElement.className = 'toolbar-button';
+                lineNumbersToggleButtonElement.title = 'Hide line numbers';
+                lineNumbersToggleButtonElement.innerHTML = Icons.LINE_NUMBERS;
+                toolbarElement.appendChild(lineNumbersToggleButtonElement);
 
                 const biraryOutputToggleButtonElement = document.createElement('button');
                 biraryOutputToggleButtonElement.className = 'toolbar-button';
@@ -1595,19 +1791,21 @@ function openAssembler () {
                 horizontalSeperatorElement.style.flex = '80';
                 verticalSeperatorElement.appendChild(horizontalSeperatorElement);
 
-                const editor = new Editor({
+                this.editor = new Editor({
                     name: 'assembler-editor',
                     rootElement: horizontalSeperatorElement
                 });
-                editor.editorElement.style.flex = '75';
+                this.editor.editorElement.style.flex = '80';
 
-                const binaryOutputElement = document.createElement('pre');
+                const binaryOutputElement = document.createElement('textarea');
                 binaryOutputElement.className = 'output-right';
-                binaryOutputElement.style.flex = '25';
+                binaryOutputElement.disabled = true;
+                binaryOutputElement.style.flex = '20';
                 horizontalSeperatorElement.appendChild(binaryOutputElement);
 
-                const errorsOutputElement = document.createElement('pre');
+                const errorsOutputElement = document.createElement('textarea');
                 errorsOutputElement.className = 'output-bottom';
+                errorsOutputElement.disabled = true;
                 errorsOutputElement.style.flex = '20';
                 verticalSeperatorElement.appendChild(errorsOutputElement);
             }

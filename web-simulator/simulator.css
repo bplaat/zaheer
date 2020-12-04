@@ -33,7 +33,7 @@ h1, h2, h3, p {
     margin: 16px 0;
 }
 
-pre {
+pre, textarea {
     margin: 0;
 }
 
@@ -45,6 +45,16 @@ a {
 
 a:hover {
     text-decoration: underline;
+}
+
+textarea {
+    resize: none;
+    border: 0;
+    color: #111;
+    background-color: transparent;
+    white-space: pre;
+    overflow-wrap: normal;
+    overflow: auto;
 }
 
 /* Window Manager */
@@ -321,21 +331,18 @@ a:hover {
 }
 
 .editor-line-numbers {
-    min-width: 32px;
-    padding: 0 8px;
-    margin-right: 16px;
+    padding: 0 16px;
     color: #777;
     text-align: right;
+    overflow: hidden;
+    pointer-events: none;
+    border-right: 1px solid #bbb;
+    background-color: #f6f6f6;
 }
 
 .editor-textarea {
     flex: 1;
-    resize: none;
-    border: 0;
-    padding: 0 4px;
-    white-space: pre;
-    overflow-wrap: normal;
-    overflow-x: auto;
+    padding: 0 12px;
 }
 
 .output-right {
