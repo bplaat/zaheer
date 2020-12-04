@@ -1648,8 +1648,8 @@ class Editor {
         // Load stored code
         if (localStorage.getItem(name) != null) {
             this.textareaElement.value = localStorage.getItem(name);
-            this.updateState();
         }
+        this.updateState();
     }
 
     // Save textarea state
@@ -1667,7 +1667,11 @@ class Editor {
         // Update line numbers
         const lines = this.textareaElement.value.split('\n');
 
-        let number = lines.length > 1 ? 1 : Math.ceil(Math.log10(lines.length));
+        if (lines.length == 0) {
+            lines.push('');
+        }
+
+        let number = lines.length < 1 ? 1 : Math.ceil(Math.log10(lines.length));
         if (number < 3) number = 3;
         this.lineNumbersElement.cols = number;
 
@@ -1679,7 +1683,7 @@ class Editor {
         this.lineNumbersElement.scrollTop = this.textareaElement.scrollTop;
 
         // Save text
-        localStorage.setItem(name, this.textareaElement.value);
+        localStorage.setItem(this.name, this.textareaElement.value);
     }
 
     // Format code in editor
@@ -1735,19 +1739,19 @@ function openAssembler () {
 
                 const checkButtonElement = document.createElement('button');
                 checkButtonElement.className = 'toolbar-button';
-                checkButtonElement.title = 'Assembler & Check';
+                checkButtonElement.title = 'Assemble (Ctrl + A)';
                 checkButtonElement.innerHTML = Icons.CHECK;
                 toolbarElement.appendChild(checkButtonElement);
 
                 const loadButtonElement = document.createElement('button');
                 loadButtonElement.className = 'toolbar-button';
-                loadButtonElement.title = 'Assembler & Load';
+                loadButtonElement.title = 'Assemble & Load (Ctrl + L)';
                 loadButtonElement.innerHTML = Icons.LOAD;
                 toolbarElement.appendChild(loadButtonElement);
 
                 const formatButtonElement = document.createElement('button');
                 formatButtonElement.className = 'toolbar-button';
-                formatButtonElement.title = 'Format code (CTRL+F)';
+                formatButtonElement.title = 'Format code (Ctrl + F)';
                 formatButtonElement.innerHTML = Icons.FORMAT;
                 formatButtonElement.addEventListener('click', () => {
                     this.editor.format();
@@ -1760,25 +1764,25 @@ function openAssembler () {
 
                 const errorsToggleButtonElement = document.createElement('button');
                 errorsToggleButtonElement.className = 'toolbar-button';
-                errorsToggleButtonElement.title = 'Treat all warnings as errors';
+                errorsToggleButtonElement.title = 'Treat all warnings as errors (Ctrl + E)';
                 errorsToggleButtonElement.innerHTML = Icons.ERROR;
                 toolbarElement.appendChild(errorsToggleButtonElement);
 
                 const lineNumbersToggleButtonElement = document.createElement('button');
                 lineNumbersToggleButtonElement.className = 'toolbar-button';
-                lineNumbersToggleButtonElement.title = 'Hide line numbers';
+                lineNumbersToggleButtonElement.title = 'Hide line numbers (Ctrl + B)';
                 lineNumbersToggleButtonElement.innerHTML = Icons.LINE_NUMBERS;
                 toolbarElement.appendChild(lineNumbersToggleButtonElement);
 
                 const biraryOutputToggleButtonElement = document.createElement('button');
                 biraryOutputToggleButtonElement.className = 'toolbar-button';
-                biraryOutputToggleButtonElement.title = 'Hide binary Output';
+                biraryOutputToggleButtonElement.title = 'Hide binary Output (Ctrl + |)';
                 biraryOutputToggleButtonElement.innerHTML = Icons.SIDEPANE_RIGHT;
                 toolbarElement.appendChild(biraryOutputToggleButtonElement);
 
                 const assemblerOutputToggleButtonElement = document.createElement('button');
                 assemblerOutputToggleButtonElement.className = 'toolbar-button';
-                assemblerOutputToggleButtonElement.title = 'Hide assembler Output';
+                assemblerOutputToggleButtonElement.title = 'Hide assembler Output (Ctrl + `)';
                 assemblerOutputToggleButtonElement.innerHTML = Icons.SIDEPANE_BOTTOM;
                 toolbarElement.appendChild(assemblerOutputToggleButtonElement);
 
@@ -1916,3 +1920,21 @@ function openSimulator () {
         simulatorWindow.focus();
     }
 }
+
+/*
+
+start:
+    mov a0, hello_string ; 2
+    jmp print_string ; 1
+    halt ; 2
+
+hello_string: db 'Hello World!', 10, 0
+
+print_string:
+    mov t0, byte [a0] ; 1
+    jmpeq rp ; 2
+    mov byte [FAKE_OUTPUT], t0 ; 2
+    inc a0 ; 1
+    jmp print_string ; 1
+
+*/
