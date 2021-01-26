@@ -1,5 +1,5 @@
 # The Taro video generator
-The Taro video generator is a simple video signal generator
+The Taro video generator is a simple VGA singal generator chip
 
 ## Features
 - 10K video RAM + 2K character RAM
@@ -8,7 +8,7 @@ The Taro video generator is a simple video signal generator
 - Which uses 8x8 pixels character font
 - Bitmaps modes with 2 or 16 colors
 - Vertical smooth scrolling via a video RAM offset
-- Future: Vertical sync interupt
+- Horizontal and Vertical sync interupt
 
 ## Memory interface with the Kora processor
 The video generator has it own RAM so the processor has to write to special registers in RAM to edit that in a controlled manner:
