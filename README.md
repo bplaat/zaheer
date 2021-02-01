@@ -5,7 +5,7 @@ The processor has a classic CISC instruction with some RISC features which is in
 ## The sub projects
 Also included in this git repo are other smaller said projects that together with the Kora Processor make a complete computer system called the Mako Computer System running the Zuko Operating System:
 
-- **The 16-bit Kora Processor**
+- **The Kora 16-bit Processor**
     - A simple 16-bit CISC processor with RISC features
     - [Documentation](docs/kora-processor.md)
 

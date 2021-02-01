@@ -131,6 +131,8 @@ Unlike the Neva processor every instructions is conditional, this can benefit so
 <tr><td>15</td><td><code>-ng</code></td><td>Not greater</td><td><code>-le</code> Lesser or equal (signed)</td><td><code>!zero || (sign != overflow)</code></td></tr>
 </table>
 
+An instruction sets only the processor flags when the condition is set to `-` always unless it is the `cmp` or `test` instruction.
+
 ## Kora (re)starts jump address
 When Kora (re)starts the instruction pointer register is set to `0x0000` and the code segment register is set to `0xffff`
 So the processor starts executing code at `0xffffff00`
@@ -149,8 +151,8 @@ The Kora processor has more general instructions then the Neva processor and is 
 <tr><td colspan="5"><i>Move, load and store instructions (6):</i></td></tr>
 <tr><td>2</td><td><code>mov</code></td><td>Move data</td><td><code>dest = data</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
 <tr><td>3</td><td><code>lw</code></td><td>Load word (16-bit) from memory</td><td><code>dest = [(ds &lt;&lt; 8) + data]</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
-<tr><td>4</td><td><code>lb</code></td><td>Load signed byte (8-bit) from memory</td><td><code>dest = [(ds &lt;&lt; 8) + data] &amp; 0x00ff (sign extended)</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
-<tr><td>5</td><td><code>lbu</code></td><td>Load byte (8-bit) from memory</td><td><code>dest = [(ds &lt;&lt; 8) + data] &amp; 0x00ff</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
+<tr><td>4</td><td><code>lb</code></td><td>Load unsigned byte (8-bit) from memory</td><td><code>dest = [(ds &lt;&lt; 8) + data] &amp; 0x00ff</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
+<tr><td>5</td><td><code>lbs</code></td><td>Load signed byte (8-bit) from memory</td><td><code>dest = signed([(ds &lt;&lt; 8) + data] &amp; 0x00ff)</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
 <tr><td>6</td><td><code>sw</code></td><td>Store word (16-bit) to memory</td><td><code>[(ds &lt;&lt; 8) + data] = dest</code></td><td>-</td></tr>
 <tr><td>7</td><td><code>sb</code></td><td>Store word (8-bit) to memory</td><td><code>[(ds &lt;&lt; 8) + data] = dest &amp; 0x00ff</code></td><td>-</td></tr>
 <tr><td colspan="5"></td></tr>
@@ -161,7 +163,7 @@ The Kora processor has more general instructions then the Neva processor and is 
 <tr><td>10</td><td><code>sub</code></td><td>Subtract</td><td><code>dest -= data</code></td><td><code>c</code>, <code>z</code>, <code>s</code>, <code>o</code></td></tr>
 <tr><td>11</td><td><code>sbb</code></td><td>Subtract with borrow</td><td><code>dest -= data + borrow</code></td><td><code>c</code>, <code>z</code>, <code>s</code>, <code>o</code></td></tr>
 <tr><td>12</td><td><code>neg</code></td><td>Negate</td><td><code>dest = -data</code></td><td><code>c</code>, <code>z</code>, <code>s</code>, <code>o</code></td></tr>
-<tr><td>13</td><td><code>cmp</code></td><td>Compare</td><td><code>dest - data (only set flags)</code></td><td><code>c</code>, <code>z</code>, <code>s</code>, <code>o</code></td></tr>
+<tr><td>13</td><td><code>cmp</code></td><td>Compare</td><td><code>dest - data (always set flags)</code></td><td><code>c</code>, <code>z</code>, <code>s</code>, <code>o</code></td></tr>
 <tr><td colspan="5"></td></tr>
 
 <tr><td colspan="5"><i>Bitwise instructions (8):</i></td></tr>
@@ -169,7 +171,7 @@ The Kora processor has more general instructions then the Neva processor and is 
 <tr><td>15</td><td><code>or</code></td><td>Logical or</td><td><code>dest |= data</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
 <tr><td>16</td><td><code>xor</code></td><td>Logical xor</td><td><code>dest ^= data</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
 <tr><td>17</td><td><code>not</code></td><td>Logical not</td><td><code>dest = ~data</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
-<tr><td>18</td><td><code>test</code></td><td>Logical compare (and)</td><td><code>dest &amp; data (only set flags)</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
+<tr><td>18</td><td><code>test</code></td><td>Logical compare (and)</td><td><code>dest &amp; data (always set flags)</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
 <tr><td>19</td><td><code>shl</code></td><td>Logical shift left</td><td><code>dest &lt;&lt;= data &amp; 15</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
 <tr><td>20</td><td><code>shr</code></td><td>Logical shift right</td><td><code>dest &gt;&gt;= data &amp; 15</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
 <tr><td>21</td><td><code>sar</code></td><td>Arithmetic shift right</td><td><code>dest &gt;&gt;&gt;= data &amp; 15</code></td><td><code>0</code>, <code>z</code>, <code>s</code>, <code>0</code></td></tr>
@@ -182,10 +184,10 @@ The Kora processor has more general instructions then the Neva processor and is 
 
 <tr><td colspan="5"><i>Jump, call and return instructions (6):</i></td></tr>
 <tr><td>24</td><td><code>jmp</code></td><td>Jump <code>(dest=0)</code></td><td><code>ip = data</code></td><td>-</td></tr>
-<tr><td>24</td><td><code>jmpr</code></td><td>Jump relative <code>(dest=1)</code></td><td><code>ip += data</code></td><td>-</td></tr>
+<tr><td>24</td><td><code>jmpr</code></td><td>Jump relative <code>(dest=1)</code></td><td><code>ip += signed(data)</code></td><td>-</td></tr>
 <tr><td>25</td><td><code>jmpf</code></td><td>Jump far</td><td><code>cs = dest, ip = data</code></td><td>-</td></tr>
 <tr><td>26</td><td><code>call</code></td><td>Call subroutine <code>(dest=0)</code></td><td><code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip = data</code></td><td>-</td></tr>
-<tr><td>26</td><td><code>callr</code></td><td>Call relative subroutine <code>(dest=1)</code></td><td><code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip += data</code></td><td>-</td></tr>
+<tr><td>26</td><td><code>callr</code></td><td>Call relative subroutine <code>(dest=1)</code></td><td><code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip += signed(data)</code></td><td>-</td></tr>
 <tr><td>27</td><td><code>callf</code></td><td>Call far subroutine</td><td><code>[(ss &lt;&lt; 8) + sp] = cs, sp -= 2, cs = dest</code><br/><code>[(ss &lt;&lt; 8) + sp] = ip, sp -= 2, ip = data</code></td><td>-</td></tr>
 <tr><td>28</td><td><code>ret</code></td><td>Return from subroutine</td><td><code>ip = [(ss &lt;&lt; 8) + sp + 2], sp += 2 + data</code></td><td>-</td></tr>
 <tr><td>29</td><td><code>retf</code></td><td>Return from far subroutine</td><td><code>ip = [(ss &lt;&lt; 8) + sp + 2], sp += 2</code><br/><code>cs = [(ss &lt;&lt; 8) + sp + 2], sp += 2 + data</code></td><td>-</td></tr>
