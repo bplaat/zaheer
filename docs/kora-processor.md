@@ -123,12 +123,12 @@ Unlike the Neva processor every instructions is conditional, this can benefit so
 <tr><td>11</td><td><code>-na</code></td><td>Not above</td><td><code>-be</code> Below or equal (unsigned)</td><td><code>carry || zero</code></td></tr>
 <tr><td colspan="5"></td></tr>
 
-<tr><td>12</td><td><code>-l</code></td><td>Lesser</td><td><code>-nge</code> Not greater or equal (signed)</td><td><code>sign != overflow</code></td></tr>
-<tr><td>13</td><td><code>-nl</code></td><td>Not lesser</td><td><code>-ge</code> Greater or equal (signed)</td><td><code>sign == overflow</code></td></tr>
+<tr><td>12</td><td><code>-l</code></td><td>Less</td><td><code>-nge</code> Not greater or equal (signed)</td><td><code>sign != overflow</code></td></tr>
+<tr><td>13</td><td><code>-nl</code></td><td>Not less</td><td><code>-ge</code> Greater or equal (signed)</td><td><code>sign == overflow</code></td></tr>
 <tr><td colspan="5"></td></tr>
 
-<tr><td>14</td><td><code>-g</code></td><td>Greater</td><td><code>-nle</code> Not lesser or equal (signed)</td><td><code>zero &amp;&amp; (sign == overflow)</code></td></tr>
-<tr><td>15</td><td><code>-ng</code></td><td>Not greater</td><td><code>-le</code> Lesser or equal (signed)</td><td><code>!zero || (sign != overflow)</code></td></tr>
+<tr><td>14</td><td><code>-g</code></td><td>Greater</td><td><code>-nle</code> Not less or equal (signed)</td><td><code>zero &amp;&amp; (sign == overflow)</code></td></tr>
+<tr><td>15</td><td><code>-ng</code></td><td>Not greater</td><td><code>-le</code> Less or equal (signed)</td><td><code>!zero || (sign != overflow)</code></td></tr>
 </table>
 
 An instruction sets only the processor flags when the condition is set to `-` always unless it is the `cmp` or `test` instruction.
