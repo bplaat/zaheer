@@ -29,7 +29,7 @@ Also included in this git repo are other smaller said projects that together wit
 
 ## Two different platforms
 The ultimate goal is that this entire project will run on two different platforms:
-- A Web Simulator version like [neva-processor.ml](https://neva-processor.ml/) on [kora-processor.ml](https://kora-processor.ml/)
+- A Web Simulator version like [neva-processor.ml](https://neva-processor.ml/)
 - A Altera Cyclone II FPGA dev board version with other hardwear on a broadboard
 
 ## Roadmap things to do
