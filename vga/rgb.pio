@@ -1,0 +1,29 @@
+.program rgb
+    pull block       ; Load init counter value
+    mov y, osr
+
+.wrap_target
+    set pins, 0      ; Clear rgb lines when blanking
+    mov x, y
+    wait 1 irq 1 [3] ; Wait for vsync + active irq
+
+write_two_pixels:
+    pull block
+    out pins, 4 [8]  ; 5 * 2 clocks needed per pixel
+    out pins, 4 [8]
+    jmp x-- write_two_pixels
+.wrap
+
+% c-sdk {
+static inline void rgb_program_init(PIO pio, uint sm, uint offset, uint pin) {
+    pio_sm_config c = rgb_program_get_default_config(offset);
+    sm_config_set_set_pins(&c, pin, 4);
+    sm_config_set_out_pins(&c, pin, 4);
+    pio_gpio_init(pio, pin);
+    pio_gpio_init(pio, pin+1);
+    pio_gpio_init(pio, pin+2);
+    pio_gpio_init(pio, pin+3);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 4, true);
+    pio_sm_init(pio, sm, offset, &c);
+}
+%}
