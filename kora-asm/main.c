@@ -4,10 +4,11 @@ Made by Bastiaan van der Plaat
 
 Work in progress!!!
 
-Features:
+TODO items:
 - all instructions
+- org, equ vars, $, labels, .labels
+- db dw dd times align
 - + - * / % & | ^ ~ ( )
-- basic labels
 - good error messaging
 - basic disassembler
 */
@@ -79,6 +80,25 @@ char *reg_to_string(uint8_t reg) {
     return NULL;
 }
 
+typedef enum KoraCond {
+    KORA_COND_ALWAYS,
+    KORA_COND_NEVER,
+    KORA_COND_Z,
+    KORA_COND_NZ,
+    KORA_COND_S,
+    KORA_COND_NS,
+    KORA_COND_C,
+    KORA_COND_NC,
+    KORA_COND_O,
+    KORA_COND_NO,
+    KORA_COND_A,
+    KORA_COND_NA,
+    KORA_COND_L,
+    KORA_COND_NL,
+    KORA_COND_G,
+    KORA_COND_NG
+} KoraCond;
+
 typedef enum KoraOpcode {
     KORA_OP_MOV,
     KORA_OP_LW,
@@ -107,22 +127,6 @@ typedef enum KoraOpcode {
     KORA_OP_SAR,
 
     KORA_OP_JMP,
-    KORA_OP_JZ,
-    KORA_OP_JNZ,
-    KORA_OP_JS,
-    KORA_OP_JNS,
-    KORA_OP_JC,
-    KORA_OP_JNC,
-    KORA_OP_JO,
-    KORA_OP_JNO,
-    KORA_OP_JA,
-    KORA_OP_JNA,
-    KORA_OP_JB,
-    KORA_OP_JNB,
-    KORA_OP_JL,
-    KORA_OP_JNL,
-    KORA_OP_JG,
-    KORA_OP_JNG,
 
     KORA_OP_PUSH,
     KORA_OP_POP,
@@ -158,22 +162,22 @@ KoraOpcode string_to_opcode(char *reg) {
     if (!strcmp(reg, "sar")) return KORA_OP_SAR;
 
     if (!strcmp(reg, "jmp")) return KORA_OP_JMP;
-    if (!strcmp(reg, "jz")) return KORA_OP_JZ;
-    if (!strcmp(reg, "jnz")) return KORA_OP_JNZ;
-    if (!strcmp(reg, "js")) return KORA_OP_JS;
-    if (!strcmp(reg, "jns")) return KORA_OP_JNS;
-    if (!strcmp(reg, "jc")) return KORA_OP_JC;
-    if (!strcmp(reg, "jnc")) return KORA_OP_JNC;
-    if (!strcmp(reg, "jo")) return KORA_OP_JO;
-    if (!strcmp(reg, "jno")) return KORA_OP_JNO;
-    if (!strcmp(reg, "ja")) return KORA_OP_JA;
-    if (!strcmp(reg, "jna")) return KORA_OP_JNA;
-    if (!strcmp(reg, "jb")) return KORA_OP_JB;
-    if (!strcmp(reg, "jnb")) return KORA_OP_JNB;
-    if (!strcmp(reg, "jl")) return KORA_OP_JL;
-    if (!strcmp(reg, "jml")) return KORA_OP_JNL;
-    if (!strcmp(reg, "jg")) return KORA_OP_JG;
-    if (!strcmp(reg, "jng")) return KORA_OP_JNG;
+    // if (!strcmp(reg, "jz")) return KORA_OP_JZ;
+    // if (!strcmp(reg, "jnz")) return KORA_OP_JNZ;
+    // if (!strcmp(reg, "js")) return KORA_OP_JS;
+    // if (!strcmp(reg, "jns")) return KORA_OP_JNS;
+    // if (!strcmp(reg, "jc")) return KORA_OP_JC;
+    // if (!strcmp(reg, "jnc")) return KORA_OP_JNC;
+    // if (!strcmp(reg, "jo")) return KORA_OP_JO;
+    // if (!strcmp(reg, "jno")) return KORA_OP_JNO;
+    // if (!strcmp(reg, "ja")) return KORA_OP_JA;
+    // if (!strcmp(reg, "jna")) return KORA_OP_JNA;
+    // if (!strcmp(reg, "jb")) return KORA_OP_JB;
+    // if (!strcmp(reg, "jnb")) return KORA_OP_JNB;
+    // if (!strcmp(reg, "jl")) return KORA_OP_JL;
+    // if (!strcmp(reg, "jml")) return KORA_OP_JNL;
+    // if (!strcmp(reg, "jg")) return KORA_OP_JG;
+    // if (!strcmp(reg, "jng")) return KORA_OP_JNG;
 
     if (!strcmp(reg, "push")) return KORA_OP_PUSH;
     if (!strcmp(reg, "pop")) return KORA_OP_POP;
@@ -185,39 +189,8 @@ KoraOpcode string_to_opcode(char *reg) {
 typedef enum KoraMode { KORA_MODE_REG_SMALL, KORA_MODE_REG_LARGE, KORA_MODE_IMM_SMALL, KORA_MODE_IMM_LARGE } KoraMode;
 
 // Utils
-char *file_read(char *path) {
-    FILE *file = fopen(path, "rb");
-    if (file == NULL) return NULL;
-    fseek(file, 0, SEEK_END);
-    size_t fileSize = ftell(file);
-    fseek(file, 0, SEEK_SET);
-    char *buffer = malloc(fileSize + 1);
-    fileSize = fread(buffer, 1, fileSize, file);
-    buffer[fileSize] = '\0';
-    fclose(file);
-    return buffer;
-}
 
 // Lexer
-typedef enum TokenType {
-    TOKEN_EOF,
-    TOKEN_KEYWORD,
-    TOKEN_NUMBER,
-    TOKEN_COLON,
-    TOKEN_COMMA,
-    TOKEN_LBRACKET,
-    TOKEN_RBRACKET,
-    TOKEN_ADD,
-    TOKEN_SUB,
-} TokenType;
-
-typedef struct Token {
-    TokenType type;
-    union {
-        char *string;
-        int32_t number;
-    };
-} Token;
 
 char *token_type_to_string(TokenType type) {
     if (type == TOKEN_EOF) return "EOF";
@@ -391,7 +364,7 @@ int main(int argc, char **argv) {
                 }
             }
 
-            else if ((opcode >= KORA_OP_JMP && opcode <= KORA_OP_JNG) || opcode == KORA_OP_PUSH ||
+            else if (opcode >= KORA_OP_JMP || opcode == KORA_OP_PUSH ||
                      opcode == KORA_OP_CALL || opcode == KORA_OP_RET) {
                 pos++;
                 if (tokens[pos].type == TOKEN_KEYWORD) {

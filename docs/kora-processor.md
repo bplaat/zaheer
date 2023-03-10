@@ -81,6 +81,9 @@ The Kora processor has way more registers than the Neva processor, this ensures 
 <tr><td>13</td><td><code>bp</code></td><td>Stack base pointer</td></tr>
 <tr><td>14</td><td><code>sp</code></td><td>Stack pointer</td></tr>
 <tr><td>15</td><td><code>flags</code></td><td>Flags</td></tr>
+
+<tr><td colspan="3"><i>Inaccessible registers:</i></td></tr>
+<tr><td>-</td><td><code>ip</code></td><td>Instruction pointer</td></tr>
 </table>
 
 ## Flag register bits
@@ -204,7 +207,7 @@ memset:
 ; strlen, strcpy, strcat, strcmp
 strlen:
     ; a0 = str
-    mov a1, a0
+    mov t0, a0
 .repeat:
     mov t1, byte [a0]
     cmp t1, 0
@@ -212,7 +215,7 @@ strlen:
     inc a0
     jmp .repeat
 .done:
-    sub a0, a1
+    sub a0, t0
     ret
 ```
 ```asm
