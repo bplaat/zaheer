@@ -438,7 +438,7 @@ The Kora processor has general flags and processor state flags, all flags are st
     <tr>
         <td>23 4*</td>
         <td><code>jz</code></td>
-        <td>Hump zero</td>
+        <td>Jump zero</td>
         <td>reg: <code>if (zero) ip = src + sx(disp)</code><br>imm: <code>if (zero) ip += sx(imm) << 1</code></td>
         <td>-</td>
     </tr>
@@ -709,8 +709,8 @@ are used to make the Kora assembler look more like x86 assembler:
     <tr>
         <td><code>ret</code></td>
         <td>Return from function</td>
-        <td><code>ret</code></td>
-        <td><code>jmp rp</code></td>
+        <td><code>ret</code><br><code>ret s0</code></td>
+        <td><code>jmp rp</code><br><code>jmp s0</code></td>
     </tr>
 </table>
 
@@ -795,5 +795,5 @@ strcat:
     jmp .repeat
 .done:
     call strcpy
-    jmp s0 ; ret
+    ret s0
 ```
