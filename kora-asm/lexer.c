@@ -4,8 +4,8 @@
 #include <stdlib.h>
 
 // Source
-NblSource *nbl_source_new(char *path, char *text) {
-    NblSource *source = malloc(sizeof(NblSource));
+Source *nbl_source_new(char *path, char *text) {
+    Source *source = malloc(sizeof(Source));
     source->refs = 1;
     source->path = strdup(path);
     source->text = strdup(text);
@@ -19,16 +19,15 @@ NblSource *nbl_source_new(char *path, char *text) {
     return source;
 }
 
-NblSource *nbl_source_ref(NblSource *source) {
+Source *nbl_source_ref(Source *source) {
     source->refs++;
     return source;
 }
 
-void nbl_source_get_line_column(NblSource *source, int32_t offset, int32_t *_line, int32_t *_column,
-                                char **_lineStart) {
+void nbl_source_get_line_column(Source *source, int32_t offset, int32_t *_line, int32_t *_column, char **_line_start) {
     int32_t line = 1;
     int32_t column = 1;
-    char *lineStart = source->text;
+    char *line_start = source->text;
     char *c = source->text;
     while (*c) {
         if (c - source->text == offset) {
@@ -39,7 +38,7 @@ void nbl_source_get_line_column(NblSource *source, int32_t offset, int32_t *_lin
             line++;
             if (*c == '\r') c++;
             c++;
-            lineStart = c;
+            line_start = c;
         } else {
             column++;
             c++;
@@ -47,14 +46,14 @@ void nbl_source_get_line_column(NblSource *source, int32_t offset, int32_t *_lin
     }
     *_line = line;
     *_column = column;
-    *_lineStart = lineStart;
+    *_line_start = line_start;
 }
 
-void nbl_source_print_error(NblSource *source, int32_t offset, char *format, ...) {
+void nbl_source_print_error(Source *source, int32_t offset, char *format, ...) {
     int32_t line;
     int32_t column;
-    char *lineStart;
-    nbl_source_get_line_column(source, offset, &line, &column, &lineStart);
+    char *line_start;
+    nbl_source_get_line_column(source, offset, &line, &column, &line_start);
 
     fprintf(stderr, "%s:%d:%d ERROR: ", source->path, line, column);
     va_list args;
@@ -62,18 +61,18 @@ void nbl_source_print_error(NblSource *source, int32_t offset, char *format, ...
     vfprintf(stderr, format, args);
     va_end(args);
 
-    char *c = lineStart;
+    char *c = line_start;
     while (*c != '\n' && *c != '\r' && *c != '\0') c++;
-    size_t lineLength = c - lineStart;
+    size_t line_length = c - line_start;
 
     fprintf(stderr, "\n%4d | ", line);
-    fwrite(lineStart, 1, lineLength, stderr);
+    fwrite(line_start, 1, line_length, stderr);
     fprintf(stderr, "\n     | ");
     for (int32_t i = 0; i < column - 1; i++) fprintf(stderr, " ");
     fprintf(stderr, "^\n");
 }
 
-void nbl_source_release(NblSource *source) {
+void nbl_source_release(Source *source) {
     source->refs--;
     if (source->refs > 0) return;
 
@@ -125,7 +124,6 @@ char *token_type_to_string(TokenType type) {
     if (type == TOKEN_T1) return "t1";
     if (type == TOKEN_T2) return "t2";
     if (type == TOKEN_T3) return "t3";
-    if (type == TOKEN_T4) return "t4";
     if (type == TOKEN_S0) return "s0";
     if (type == TOKEN_S1) return "s1";
     if (type == TOKEN_S2) return "s2";
@@ -136,6 +134,7 @@ char *token_type_to_string(TokenType type) {
     if (type == TOKEN_A3) return "a3";
     if (type == TOKEN_BP) return "bp";
     if (type == TOKEN_SP) return "sp";
+    if (type == TOKEN_RP) return "rp";
     if (type == TOKEN_FLAGS) return "flags";
 
     // Opcodes
@@ -164,6 +163,7 @@ char *token_type_to_string(TokenType type) {
     if (type == TOKEN_SHR) return "shr";
     if (type == TOKEN_SAR) return "sar";
     if (type == TOKEN_JMP) return "jmp";
+    if (type == TOKEN_CALL) return "call";
     if (type == TOKEN_JZ) return "jz";
     if (type == TOKEN_JNZ) return "jnz";
     if (type == TOKEN_JS) return "js";
@@ -178,12 +178,12 @@ char *token_type_to_string(TokenType type) {
     if (type == TOKEN_JNL) return "jnl";
     if (type == TOKEN_JG) return "jg";
     if (type == TOKEN_JNG) return "jng";
-    if (type == TOKEN_PUSH) return "push";
-    if (type == TOKEN_POP) return "pop";
-    if (type == TOKEN_CALL) return "call";
-    if (type == TOKEN_RET) return "ret";
+
+    // Psuedo opcodes
     if (type == TOKEN_INC) return "inc";
     if (type == TOKEN_DEC) return "dec";
+    if (type == TOKEN_HLT) return "hlt";
+    if (type == TOKEN_RET) return "ret";
     return NULL;
 }
 
@@ -196,25 +196,26 @@ void token_free(Token *token) {
 Keyword keywords[] = {
     {TOKEN_DB, "db"},       {TOKEN_DH, "dh"},     {TOKEN_DW, "dw"},     {TOKEN_TIMES, "times"}, {TOKEN_ALIGN, "align"},
     {TOKEN_BYTE, "byte"},   {TOKEN_HALF, "half"}, {TOKEN_WORD, "word"}, {TOKEN_T0, "t0"},       {TOKEN_T1, "t1"},
-    {TOKEN_T2, "t2"},       {TOKEN_T3, "t3"},     {TOKEN_T4, "t4"},     {TOKEN_S0, "s0"},       {TOKEN_S1, "s1"},
-    {TOKEN_S2, "s2"},       {TOKEN_S3, "s3"},     {TOKEN_A0, "a0"},     {TOKEN_A1, "a1"},       {TOKEN_A2, "a2"},
-    {TOKEN_A3, "a3"},       {TOKEN_BP, "bp"},     {TOKEN_SP, "sp"},     {TOKEN_FLAGS, "flags"}, {TOKEN_MOV, "mov"},
+    {TOKEN_T2, "t2"},       {TOKEN_T3, "t3"},     {TOKEN_S0, "s0"},     {TOKEN_S1, "s1"},       {TOKEN_S2, "s2"},
+    {TOKEN_S3, "s3"},       {TOKEN_A0, "a0"},     {TOKEN_A1, "a1"},     {TOKEN_A2, "a2"},       {TOKEN_A3, "a3"},
+    {TOKEN_BP, "bp"},       {TOKEN_SP, "sp"},     {TOKEN_RP, "rp"},     {TOKEN_FLAGS, "flags"}, {TOKEN_MOV, "mov"},
     {TOKEN_MOVSX, "movsx"}, {TOKEN_LW, "lw"},     {TOKEN_LH, "lh"},     {TOKEN_LHSX, "lhsx"},   {TOKEN_LB, "lb"},
     {TOKEN_LBSX, "lbsx"},   {TOKEN_SW, "sw"},     {TOKEN_SH, "sh"},     {TOKEN_SB, "sb"},       {TOKEN_ADD, "add"},
     {TOKEN_ADC, "adc"},     {TOKEN_SUB, "sub"},   {TOKEN_SBB, "sbb"},   {TOKEN_NEG, "neg"},     {TOKEN_CMP, "cmp"},
     {TOKEN_AND, "and"},     {TOKEN_OR, "or"},     {TOKEN_XOR, "xor"},   {TOKEN_NOT, "not"},     {TOKEN_TEST, "test"},
-    {TOKEN_SHL, "shl"},     {TOKEN_SHR, "shr"},   {TOKEN_SAR, "sar"},   {TOKEN_JMP, "jmp"},     {TOKEN_JZ, "jz"},
-    {TOKEN_JNZ, "jnz"},     {TOKEN_JS, "js"},     {TOKEN_JNS, "jns"},   {TOKEN_JC, "jc"},       {TOKEN_JNC, "jnc"},
-    {TOKEN_JO, "jo"},       {TOKEN_JNO, "jno"},   {TOKEN_JA, "ja"},     {TOKEN_JNA, "jna"},     {TOKEN_JL, "jl"},
-    {TOKEN_JNL, "jnl"},     {TOKEN_JG, "jg"},     {TOKEN_JNG, "jng"},   {TOKEN_PUSH, "push"},   {TOKEN_POP, "pop"},
-    {TOKEN_CALL, "call"},   {TOKEN_RET, "ret"},   {TOKEN_INC, "inc"},   {TOKEN_DEC, "dec"}};
+    {TOKEN_SHL, "shl"},     {TOKEN_SHR, "shr"},   {TOKEN_SAR, "sar"},   {TOKEN_JMP, "jmp"},     {TOKEN_CALL, "call"},
+    {TOKEN_JZ, "jz"},       {TOKEN_JNZ, "jnz"},   {TOKEN_JS, "js"},     {TOKEN_JNS, "jns"},     {TOKEN_JC, "jc"},
+    {TOKEN_JNC, "jnc"},     {TOKEN_JO, "jo"},     {TOKEN_JNO, "jno"},   {TOKEN_JA, "ja"},       {TOKEN_JNA, "jna"},
+    {TOKEN_JL, "jl"},       {TOKEN_JNL, "jnl"},   {TOKEN_JG, "jg"},     {TOKEN_JNG, "jng"},     {TOKEN_INC, "inc"},
+    {TOKEN_DEC, "dec"},     {TOKEN_HLT, "hlt"},   {TOKEN_RET, "ret"},
+};
 
 Operator operators[] = {{TOKEN_COLON, ':'},  {TOKEN_COMMA, ','},  {TOKEN_LBRACKET, '['}, {TOKEN_RBRACKET, ']'},
-                         {TOKEN_LPAREN, '('}, {TOKEN_RPAREN, ')'}, {TOKEN_ASSIGN, '='},   {TOKEN_ADD, '+'},
-                         {TOKEN_SUB, '-'},    {TOKEN_MUL, '*'},    {TOKEN_DIV, '/'},      {TOKEN_MOD, '%'},
-                         {TOKEN_AND, '&'},    {TOKEN_OR, '|'},     {TOKEN_XOR, '^'},      {TOKEN_NOT, '~'}};
+                        {TOKEN_LPAREN, '('}, {TOKEN_RPAREN, ')'}, {TOKEN_ASSIGN, '='},   {TOKEN_ADD, '+'},
+                        {TOKEN_SUB, '-'},    {TOKEN_MUL, '*'},    {TOKEN_DIV, '/'},      {TOKEN_MOD, '%'},
+                        {TOKEN_AND, '&'},    {TOKEN_OR, '|'},     {TOKEN_XOR, '^'},      {TOKEN_NOT, '~'}};
 
-bool lexer(char *path, char *text, NblSource **source, Token **_tokens, size_t *tokens_size) {
+bool lexer(char *path, char *text, Source **source, Token **_tokens, size_t *tokens_size) {
     *source = nbl_source_new(path, text);
     size_t capacity = 1024;
     size_t size = 0;
@@ -282,10 +283,10 @@ bool lexer(char *path, char *text, NblSource **source, Token **_tokens, size_t *
 
         // Strings
         if (*c == '"' || *c == '\'') {
-            char endChar = *c;
+            char end_char = *c;
             c++;
             char *ptr = c;
-            while (*c != endChar) {
+            while (*c != end_char) {
                 if (*c == '\0') {
                     nbl_source_print_error(*source, c - text, "Unclosed string");
                     return false;
@@ -296,35 +297,41 @@ bool lexer(char *path, char *text, NblSource **source, Token **_tokens, size_t *
             c++;
 
             char *string = malloc(string_size + 1);
-            size_t strpos = 0;
+            size_t pos = 0;
             for (size_t i = 0; i < string_size; i++) {
                 if (ptr[i] == '\\') {
                     i++;
-                    if (ptr[i] == 'b')
-                        string[strpos++] = '\b';
-                    else if (ptr[i] == 'f')
-                        string[strpos++] = '\f';
-                    else if (ptr[i] == 'n')
-                        string[strpos++] = '\n';
-                    else if (ptr[i] == 'r')
-                        string[strpos++] = '\r';
-                    else if (ptr[i] == 't')
-                        string[strpos++] = '\t';
-                    else if (ptr[i] == 'v')
-                        string[strpos++] = '\v';
-                    else if (ptr[i] == '\'')
-                        string[strpos++] = '\'';
+                    if (ptr[i] == '\'')
+                        string[pos++] = '\'';
                     else if (ptr[i] == '"')
-                        string[strpos++] = '"';
+                        string[pos++] = '"';
                     else if (ptr[i] == '\\')
-                        string[strpos++] = '\\';
+                        string[pos++] = '\\';
+                    else if (ptr[i] == '?')
+                        string[pos++] = '\?';
+                    else if (ptr[i] == 'a')
+                        string[pos++] = '\a';
+                    else if (ptr[i] == 'b')
+                        string[pos++] = '\b';
+                    else if (ptr[i] == 't')
+                        string[pos++] = '\t';
+                    else if (ptr[i] == 'n')
+                        string[pos++] = '\n';
+                    else if (ptr[i] == 'v')
+                        string[pos++] = '\v';
+                    else if (ptr[i] == 'f')
+                        string[pos++] = '\f';
+                    else if (ptr[i] == 'r')
+                        string[pos++] = '\r';
+                    else if (ptr[i] == 'e')
+                        string[pos++] = '\e';
                     else
-                        string[strpos++] = ptr[i];
+                        source_print_error(source, 0, "Unexpeced escape sequence: %c", ptr[i]); // todo
                 } else {
-                    string[strpos++] = ptr[i];
+                    string[pos++] = ptr[i];
                 }
             }
-            string[strpos] = '\0';
+            string[pos] = '\0';
             tokens[size].type = TOKEN_STRING;
             tokens[size++].string = string;
             continue;
@@ -367,7 +374,7 @@ bool lexer(char *path, char *text, NblSource **source, Token **_tokens, size_t *
         }
         bool found_operator = false;
         for (size_t i = 0; i < sizeof(operators) / sizeof(Operator); i++) {
-            Operator *operator = &operators[i];
+            Operator *operator= & operators[i];
             if (*c == operator->operator) {
                 c++;
                 tokens[size++].type = operator->type;

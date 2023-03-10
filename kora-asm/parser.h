@@ -7,7 +7,6 @@ typedef enum NodeType {
     NODE_NUMBER,
 
     NODE_ADD,
-
 } NodeType;
 
 typedef struct Node Node;

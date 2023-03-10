@@ -16,7 +16,7 @@ Source *source_new(char *path, char *text);
 
 Source *source_ref(Source *source);
 
-void source_get_line_column(Source *source, int32_t offset, int32_t *line, int32_t *column, char **lineStart);
+void source_get_line_column(Source *source, int32_t offset, int32_t *line, int32_t *column, char **line_start);
 
 void source_print_error(Source *source, int32_t offset, char *format, ...);
 
@@ -64,7 +64,6 @@ typedef enum TokenType {
     TOKEN_T1,
     TOKEN_T2,
     TOKEN_T3,
-    TOKEN_T4,
     TOKEN_S0,
     TOKEN_S1,
     TOKEN_S2,
@@ -75,6 +74,7 @@ typedef enum TokenType {
     TOKEN_A3,
     TOKEN_BP,
     TOKEN_SP,
+    TOKEN_RP,
     TOKEN_FLAGS,
 
     // Opcodes
@@ -103,12 +103,13 @@ typedef enum TokenType {
     TOKEN_SHR,
     TOKEN_SAR,
     TOKEN_JMP,
+    TOKEN_CALL,
+    TOKEN_JC,
+    TOKEN_JNC,
     TOKEN_JZ,
     TOKEN_JNZ,
     TOKEN_JS,
     TOKEN_JNS,
-    TOKEN_JC,
-    TOKEN_JNC,
     TOKEN_JO,
     TOKEN_JNO,
     TOKEN_JA,
@@ -117,12 +118,12 @@ typedef enum TokenType {
     TOKEN_JNL,
     TOKEN_JG,
     TOKEN_JNG,
-    TOKEN_PUSH,
-    TOKEN_POP,
-    TOKEN_CALL,
-    TOKEN_RET,
+
+    // Psuedo opcodes
     TOKEN_INC,
-    TOKEN_DEC
+    TOKEN_DEC,
+    TOKEN_HLT,
+    TOKEN_RET
 } TokenType;
 
 typedef struct Token {
@@ -149,4 +150,4 @@ typedef struct Operator {
     char operator;
 } Operator;
 
-bool lexer(char *path, char *text, NblSource **source, Token **tokens, size_t *tokens_size);
+bool lexer(char *path, char *text, Source **source, Token **tokens, size_t *tokens_size);
