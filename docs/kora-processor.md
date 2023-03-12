@@ -21,16 +21,12 @@ The Kora processor is a simple 32-bit CISC processor with RISC features
 ## Insperations
 - Many registers for an efficient calling convention: ARM, RISC-V
 - Memory access only in special load / store instructions: ARM, RISC-V
+- Immediate encoding with rotate for larger immediate encoding space: ARM
 - Most instruction names, pseudo instructions and assembler style: x86
 - Flags and jump condition combinations: x86
 
 ## Instruction encoding
-Every instruction has an opcode and a mode. The mode are two bits that describe how the instruction must be parsed and
-executed:
-```
-bit 0 = Small/Large
-bit 1 = Register/Immediate
-```
+Every instruction has an opcode and two bits that describe its mode, the jump instructions are differently encoded:
 
 ![Kora instruction encoding](instruction-encoding.png)
 
@@ -232,63 +228,63 @@ The Kora processor has general flags and processor state flags, all flags are st
         <td>0</td>
         <td><code>mov</code></td>
         <td>Move</td>
-        <td>reg: <code>dest = src + sx(disp)</code><br>imm: <code>dest = imm</code></td>
+        <td>reg*: <code>dest = src + sx(disp)</code><br>imm: <code>dest = imm rotl rotate</code></td>
         <td>-</td>
     </tr>
     <tr>
         <td>1</td>
         <td><code>lw</code></td>
         <td>Load word (32-bit)</td>
-        <td>reg: <code>dest = word [src + sx(disp)]</code><br>imm: <code>dest = word [imm]</code></td>
+        <td>reg*: <code>dest = word [src + sx(disp)]</code><br>imm: <code>dest = word [imm rotl rotate]</code></td>
         <td>-</td>
     </tr>
     <tr>
         <td>2</td>
         <td><code>lh</code></td>
         <td>Load half (16-bit)</td>
-        <td>reg: <code>dest = half [src + sx(disp)]</code><br>imm: <code>dest = half [imm]</td>
+        <td>reg*: <code>dest = half [src + sx(disp)]</code><br>imm: <code>dest = half [imm rotl rotate]</td>
         <td>-</td>
     </tr>
     <tr>
         <td>3</td>
         <td><code>lhsx</code></td>
         <td>Load half (16-bit) sign extended</td>
-        <td>reg: <code>dest = sx(byte [src + sx(disp)])</code><br>imm: <code>dest = sx(byte [imm])</code></td>
+        <td>reg*: <code>dest = sx(byte [src + sx(disp)])</code><br>imm: <code>dest = sx(byte [imm rotl rotate])</code></td>
         <td>-</td>
     </tr>
     <tr>
         <td>4</td>
         <td><code>lb</code></td>
         <td>Load byte (8-bit)</td>
-        <td>reg: <code>dest = byte [src + sx(disp)]</code><br>imm: <code>dest = byte [imm]</code></td>
+        <td>reg*: <code>dest = byte [src + sx(disp)]</code><br>imm: <code>dest = byte [imm rotl rotate]</code></td>
         <td>-</td>
     </tr>
     <tr>
         <td>5</td>
         <td><code>lbsx</code></td>
         <td>Load byte (8-bit) sign extended</td>
-        <td>reg: <code>dest = sx(byte [src + sx(disp)])</code><br>imm: <code>dest = sx(byte [imm])</code></td>
+        <td>reg*: <code>dest = sx(byte [src + sx(disp)])</code><br>imm: <code>dest = sx(byte [imm rotl rotate])</code></td>
         <td>-</td>
     </tr>
     <tr>
         <td>6</td>
         <td><code>sw</code></td>
         <td>Store word (32-bit) to memory</td>
-        <td>reg: <code>word [src + sx(disp)] = dest</code><br>imm: <code>word [imm] = dest</code></td>
+        <td>reg*: <code>word [src + sx(disp)] = dest</code><br>imm: <code>word [imm rotl rotate] = dest</code></td>
         <td>-</td>
     </tr>
     <tr>
         <td>7</td>
         <td><code>sh</code></td>
         <td>Store half (16-bit) to memory</td>
-        <td>reg: <code>half [src + sx(disp)] = dest</code><br>imm: <code>half [imm] = dest</code></td>
+        <td>reg*: <code>half [src + sx(disp)] = dest</code><br>imm: <code>half [imm rotl rotate] = dest</code></td>
         <td>-</td>
     </tr>
     <tr>
         <td>8</td>
         <td><code>sb</code></td>
         <td>Store byte (8-bit) to memory</td>
-        <td>reg: <code>byte [src + sx(disp)] = dest</code><br>imm: <code>byte [imm] = dest</code></td>
+        <td>reg*: <code>byte [src + sx(disp)] = dest</code><br>imm: <code>byte [imm rotl rotate] = dest</code></td>
         <td>-</td>
     </tr>
     <tr>
@@ -301,42 +297,42 @@ The Kora processor has general flags and processor state flags, all flags are st
         <td>9</td>
         <td><code>add</code></td>
         <td>Add</td>
-        <td>reg: <code>dest += src + sx(disp)</code><br>imm: <code>dest += imm</code></td>
+        <td>reg*: <code>dest += src + sx(disp)</code><br>imm: <code>dest += imm rotl rotate</code></td>
         <td><code>c</code>, <code>z</code>, <code>s</code>, <code>o</code></td>
     </tr>
     <tr>
         <td>10</td>
         <td><code>adc</code></td>
         <td>Add with carry</td>
-        <td>reg: <code>dest += src + sx(disp) + carry</code><br>imm: <code>dest += imm + carry</code></td>
+        <td>reg*: <code>dest += src + sx(disp) + carry</code><br>imm: <code>dest += (imm rotl rotate) + carry</code></td>
         <td><code>c</code>, <code>z</code>, <code>s</code>, <code>o</code></td>
     </tr>
     <tr>
         <td>11</td>
         <td><code>sub</code></td>
         <td>Subtract</td>
-        <td>reg: <code>dest -= src + sx(disp)</code><br>imm: <code>dest -= imm</code></td>
+        <td>reg*: <code>dest -= src + sx(disp)</code><br>imm: <code>dest -= imm rotl rotate</code></td>
         <td><code>c</code>, <code>z</code>, <code>s</code>, <code>o</code></td>
     </tr>
     <tr>
         <td>12</td>
         <td><code>sbb</code></td>
         <td>Subtract with borrow</td>
-        <td>reg: <code>dest -= src + sx(disp) + carry</code><br>imm: <code>dest -= imm + carry</code></td>
+        <td>reg*: <code>dest -= src + sx(disp) + carry</code><br>imm: <code>dest -= (imm rotl rotate) + carry</code></td>
         <td><code>c</code>, <code>z</code>, <code>s</code>, <code>o</code></td>
     </tr>
     <tr>
         <td>13</td>
         <td><code>neg</code></td>
         <td>Negate</td>
-        <td>reg: <code>dest = -(src + sx(disp))</code><br>imm: <code>dest = -imm</code></td>
+        <td>reg*: <code>dest = -(src + sx(disp))</code><br>imm: <code>dest = -(imm rotl rotate)</code></td>
         <td><code>c</code>, <code>z</code>, <code>s</code>, <code>o</code></td>
     </tr>
     <tr>
         <td>14</td>
         <td><code>cmp</code></td>
         <td>Arithmetic compare (sub)</td>
-        <td>reg: <code>dest - (src + sx(disp)) (only set flags)</code><br>imm: <code>dest - imm (only set flags)</code></td>
+        <td>reg*: <code>dest - (src + sx(disp)) (only set flags)</code><br>imm: <code>dest - (imm rotl rotate) (only set flags)</code></td>
         <td><code>c</code>, <code>z</code>, <code>s</code>, <code>o</code></td>
     </tr>
     <tr>
@@ -349,56 +345,56 @@ The Kora processor has general flags and processor state flags, all flags are st
         <td>15</td>
         <td><code>and</code></td>
         <td>Logical and</td>
-        <td>reg: <code>dest &amp;= src + sx(disp)</code><br>imm: <code>dest &amp;= imm</code></td>
+        <td>reg*: <code>dest &amp;= src + sx(disp)</code><br>imm: <code>dest &amp;= imimm rotl rotatem</code></td>
         <td><code>z</code>, <code>s</code></td>
     </tr>
     <tr>
         <td>16</td>
         <td><code>or</code></td>
         <td>Logical or</td>
-        <td>reg: <code>dest |= src + sx(disp)</code><br>imm: <code>dest |= imm</code></td>
+        <td>reg*: <code>dest |= src + sx(disp)</code><br>imm: <code>dest |= imm rotl rotate</code></td>
         <td><code>z</code>, <code>s</code></td>
     </tr>
     <tr>
         <td>17</td>
         <td><code>xor</code></td>
         <td>Logical xor</td>
-        <td>reg: <code>dest ^= src + sx(disp)</code><br>imm: <code>dest ^= imm</code></td>
+        <td>reg*: <code>dest ^= src + sx(disp)</code><br>imm: <code>dest ^= imm rotl rotate</code></td>
         <td><code>z</code>, <code>s</code></td>
     </tr>
     <tr>
         <td>18</td>
         <td><code>not</code></td>
         <td>Logical not</td>
-        <td>reg: <code>dest = ~(src + sx(disp))</code><br>imm: <code>dest = ~imm</code></td>
+        <td>reg*: <code>dest = ~(src + sx(disp))</code><br>imm: <code>dest = ~(imm rotl rotate)</code></td>
         <td><code>z</code>, <code>s</code></td>
     </tr>
     <tr>
         <td>19</td>
         <td><code>test</code></td>
         <td>Bitwise compare (and)</td>
-        <td>reg:<code>dest &amp; (src + sx(disp)) (only set flags)</code><br>imm: <code>dest &amp; imm (only set flags)</code></td>
+        <td>reg:<code>dest &amp; (src + sx(disp)) (only set flags)</code><br>imm: <code>dest &amp; (imm rotl rotate) (only set flags)</code></td>
         <td><code>z</code>, <code>s</code></td>
     </tr>
     <tr>
         <td>20</td>
         <td><code>shl</code></td>
         <td>Logical shift left</td>
-        <td>reg: <code>dest &lt;&lt;= (src + sx(disp)) &amp; 31</code><br>imm: <code>dest &lt;&lt;= (imm + 1) & 31</code></td>
+        <td>reg*: <code>dest &lt;&lt;= (src + sx(disp)) &amp; 31</code><br>imm: <code>dest &lt;&lt;= (imm rotl rotate) & 31</code></td>
         <td><code>z</code>, <code>s</code></td>
     </tr>
     <tr>
         <td>21</td>
         <td><code>shr</code></td>
         <td>Logical shift right</td>
-        <td>reg: <code>dest &gt;&gt;= (src + sx(disp)) &amp; 31</code><br>imm: <code>dest &gt;&gt;= (imm + 1) & 31</code></td>
+        <td>reg*: <code>dest &gt;&gt;= (src + sx(disp)) &amp; 31</code><br>imm: <code>dest &gt;&gt;= (imm rotl rotate) & 31</code></td>
         <td><code>z</code>, <code>s</code></td>
     </tr>
     <tr>
         <td>22</td>
         <td><code>sar</code></td>
         <td>Arithmetic shift right</td>
-        <td>reg: <code>dest &gt;&gt;&gt;= (src + sx(disp)) &amp; 31</code><br>imm: <code>dest &gt;&gt;&gt;= (imm + 1) &amp; 31</code></td>
+        <td>reg*: <code>dest &gt;&gt;&gt;= (src + sx(disp)) &amp; 31</code><br>imm: <code>dest &gt;&gt;&gt;= (imm rotl rotate) &amp; 31</code></td>
         <td><code>z</code>, <code>s</code></td>
     </tr>
     <tr>
@@ -408,115 +404,115 @@ The Kora processor has general flags and processor state flags, all flags are st
         <td colspan="5"><i>Jump instructions (1):</i></td>
     </tr>
     <tr>
-        <td>23 0*</td>
+        <td>23 0**</td>
         <td><code>jmp</code></td>
         <td>Jump</td>
-        <td>reg: <code>ip = src + sx(disp)</code><br>imm: <code>ip += sx(imm) << 1</code></td>
+        <td>reg*: <code>ip = src + sx(disp)</code><br>imm: <code>ip += sx(disp)</code></td>
         <td>-</td>
     </tr>
     <tr>
-        <td>23 1*</td>
+        <td>23 1**</td>
         <td><code>call</code></td>
         <td>Call</td>
-        <td>reg: <code>rp = ip, ip = src + sx(disp)</code><br>imm: <code>rp = ip, ip += sx(imm) << 1</code></td>
+        <td>reg*: <code>rp = ip, ip = src + sx(disp)</code><br>imm: <code>rp = ip, ip += sx(disp)</code></td>
         <td>-</td>
     </tr>
     <tr>
-        <td>23 2*</td>
+        <td>23 2**</td>
         <td><code>jc</code></td>
         <td>Jump carry</td>
-        <td>reg: <code>if (carry) ip += src + sx(disp)</code><br>imm: <code>if (carry) ip += sx(imm) << 1</code></td>
+        <td>reg*: <code>if (carry) ip += src + sx(disp)</code><br>imm: <code>if (carry) ip += sx(disp)</code></td>
         <td>-</td>
     </tr>
     <tr>
-        <td>23 3*</td>
+        <td>23 3**</td>
         <td><code>jnc</code></td>
         <td>Jump not carry</td>
-        <td>reg: <code>if (!carry) ip = src + sx(disp)</code><br>imm: <code>if (!carry) ip += sx(imm) << 1</code></td>
+        <td>reg*: <code>if (!carry) ip = src + sx(disp)</code><br>imm: <code>if (!carry) ip += sx(disp)</code></td>
         <td>-</td>
     </tr>
     <tr>
-        <td>23 4*</td>
+        <td>23 4**</td>
         <td><code>jz</code></td>
         <td>Jump zero</td>
-        <td>reg: <code>if (zero) ip = src + sx(disp)</code><br>imm: <code>if (zero) ip += sx(imm) << 1</code></td>
+        <td>reg*: <code>if (zero) ip = src + sx(disp)</code><br>imm: <code>if (zero) ip += sx(disp)</code></td>
         <td>-</td>
     </tr>
     <tr>
-        <td>23 5*</td>
+        <td>23 5**</td>
         <td><code>jnz</code></td>
         <td>Jump not zero</td>
-        <td>reg: <code>if (!zero) ip = src + sx(disp)</code><br>imm: <code>if (!zero) ip += sx(imm) << 1</code></td>
+        <td>reg*: <code>if (!zero) ip = src + sx(disp)</code><br>imm: <code>if (!zero) ip += sx(disp)</code></td>
         <td>-</td>
     </tr>
     <tr>
-        <td>23 6*</td>
+        <td>23 6**</td>
         <td><code>js</code></td>
         <td>Jump sign</td>
-        <td>reg: <code>if (sign) ip = src + sx(disp)</code><br>imm: <code>if (sign) ip += sx(imm) << 1</code></td>
+        <td>reg*: <code>if (sign) ip = src + sx(disp)</code><br>imm: <code>if (sign) ip += sx(disp)</code></td>
         <td>-</td>
     </tr>
     <tr>
-        <td>23 7*</td>
+        <td>23 7**</td>
         <td><code>jns</code></td>
         <td>Jump not sign</td>
-        <td>reg: <code>if (!sign) ip = src + sx(disp)</code><br>imm: <code>if (!sign) ip += sx(imm) << 1</code></td>
+        <td>reg*: <code>if (!sign) ip = src + sx(disp)</code><br>imm: <code>if (!sign) ip += sx(disp)</code></td>
         <td>-</td>
     </tr>
     <tr>
-        <td>23 8*</td>
+        <td>23 8**</td>
         <td><code>jo</code></td>
         <td>Jump overflow</td>
-        <td>reg: <code>if (overflow) ip = src + sx(disp)</code><br>imm: <code>if (overflow) ip += sx(imm) << 1</code></td>
+        <td>reg*: <code>if (overflow) ip = src + sx(disp)</code><br>imm: <code>if (overflow) ip += sx(disp)</code></td>
         <td>-</td>
     </tr>
     <tr>
-        <td>23 9*</td>
+        <td>23 9**</td>
         <td><code>jno</code></td>
         <td>Jump not overflow</td>
-        <td>reg: <code>if (!overflow) ip = src + sx(disp)</code><br>imm: <code>if (!overflow) ip += sx(imm) << 1</code></td>
+        <td>reg*: <code>if (!overflow) ip = src + sx(disp)</code><br>imm: <code>if (!overflow) ip += sx(disp)</code></td>
         <td>-</td>
     </tr>
     <tr>
-        <td>23 10*</td>
+        <td>23 10**</td>
         <td><code>ja</code></td>
         <td>Jump above</td>
-        <td>reg: <code>if (!carry &amp;&amp; !zero) ip = src + sx(disp)</code><br>imm: <code>if (!carry &amp;&amp; !zero) ip += sx(imm) << 1</code></td>
+        <td>reg*: <code>if (!carry &amp;&amp; !zero) ip = src + sx(disp)</code><br>imm: <code>if (!carry &amp;&amp; !zero) ip += sx(disp)</code></td>
         <td>-</td>
     </tr>
     <tr>
-        <td>23 11*</td>
+        <td>23 11**</td>
         <td><code>jna</code></td>
         <td>Jump not above</td>
-        <td>reg: <code>if (carry || zero) ip = src + sx(disp)</code><br>imm: <code>if (carry || zero) ip += sx(imm) << 1</code></td>
+        <td>reg*: <code>if (carry || zero) ip = src + sx(disp)</code><br>imm: <code>if (carry || zero) ip += sx(disp)</code></td>
         <td>-</td>
     </tr>
     <tr>
-        <td>23 12*</td>
+        <td>23 12**</td>
         <td><code>jl</code></td>
         <td>Jump less</td>
-        <td>reg: <code>if (sign != overflow) ip = src + sx(disp)</code><br>imm: <code>if (sign != overflow) ip += sx(imm) << 1</code></td>
+        <td>reg*: <code>if (sign != overflow) ip = src + sx(disp)</code><br>imm: <code>if (sign != overflow) ip += sx(disp)</code></td>
         <td>-</td>
     </tr>
     <tr>
-        <td>23 13*</td>
+        <td>23 13**</td>
         <td><code>jnl</code></td>
         <td>Jump not less</td>
-        <td>reg: <code>if (sign == overflow) ip = src + sx(disp)</code><br>imm: <code>if (sign == overflow)) ip += sx(imm) << 1</code></td>
+        <td>reg*: <code>if (sign == overflow) ip = src + sx(disp)</code><br>imm: <code>if (sign == overflow)) ip += sx(disp)</code></td>
         <td>-</td>
     </tr>
     <tr>
-        <td>23 14*</td>
+        <td>23 14**</td>
         <td><code>jg</code></td>
         <td>Jump greater</td>
-        <td>reg: <code>if (zero &amp;&amp; (sign == overflow)) ip = src + sx(disp)</code><br>imm: <code>if (zero &amp;&amp; (sign == overflow)) ip += sx(imm) << 1</code></td>
+        <td>reg*: <code>if (zero &amp;&amp; (sign == overflow)) ip = src + sx(disp)</code><br>imm: <code>if (zero &amp;&amp; (sign == overflow)) ip += sx(disp)</code></td>
         <td>-</td>
     </tr>
     <tr>
-        <td>23 15*</td>
+        <td>23 15**</td>
         <td><code>jng</code></td>
         <td>Jump not greater</td>
-        <td>reg: <code>if (!zero || (sign != overflow)) ip = src + sx(disp)</code><br>imm: <code>if (!zero || (sign != overflow)) ip += sx(imm) << 1</code></td>
+        <td>reg*: <code>if (!zero || (sign != overflow)) ip = src + sx(disp)</code><br>imm: <code>if (!zero || (sign != overflow)) ip += sx(disp)</code></td>
         <td>-</td>
     </tr>
     <tr>
@@ -534,7 +530,9 @@ The Kora processor has general flags and processor state flags, all flags are st
     </tr>
 </table>
 
-**With the jmp instruction all conditions are encoded in the otherwise unused destination register part of the instruction*
+*\* When using the large register encoding and source reg is 15 the source reg is read as **ip** and not as the **flags** register, ip relative addresing is usefull for position indepent code*
+
+*\*\* Jump instructions have a sepecial encoding, and encoded a condition in the otherwise unused destination register field*
 
 ## Pseudo instructions
 There are also some pseudo instructions which the assembler translates to other instructions, most pseudo instructions
@@ -548,7 +546,49 @@ are used to make the Kora assembler look more like x86 assembler:
         <th>Translation</th>
     </tr>
     <tr>
+        <td colspan="4"><i>Generic helpers:</i></td>
+    </tr>
+    <tr>
+        <td><code>nop</code></td>
+        <td>No operation</td>
+        <td><code>nop</code></td>
+        <td><code>mov t0, t0</code></td>
+    </tr>
+    <tr>
+        <td><code>inc reg</code></td>
+        <td>Increment register</td>
+        <td><code>inc t0</code></td>
+        <td><code>add t0, 1</code></td>
+    </tr>
+    <tr>
+        <td><code>dec reg</code></td>
+        <td>Decrement register</td>
+        <td><code>dec t0</code></td>
+        <td><code>sub t0, 1</code></td>
+    </tr>
+    <tr>
+        <td><code>hlt</code></td>
+        <td>Set halt flag</td>
+        <td><code>hlt</code></td>
+        <td><code>or flags, 1 << 8</code></td>
+    </tr>
+    <tr>
+        <td><code>ret</code></td>
+        <td>Return from function</td>
+        <td><code>ret</code></td>
+        <td><code>jmp rp</code></td>
+    </tr>
+    <tr>
+        <td colspan="4"></td>
+    </tr>
+    <tr>
         <td colspan="4"><i>Move load store helpers:</i></td>
+    </tr>
+    <tr>
+        <td><code>mov reg, -imm</code></td>
+        <td>Move negative immediate</td>
+        <td><code>mov t0, -200</code></td>
+        <td><code>neg t0, 200</code></td>
     </tr>
     <tr>
         <td><code>mov reg, word [?]</code></td>
@@ -602,7 +642,31 @@ are used to make the Kora assembler look more like x86 assembler:
         <td colspan="4"></td>
     </tr>
     <tr>
-        <td colspan="4"><i>More jumps:</i></td>
+        <td colspan="4"><i>Stack helpers:</i></td>
+    </tr>
+    <tr>
+        <td><code>push reg</code></td>
+        <td>Push register</td>
+        <td><code>push rp</code></td>
+        <td><code>mov word [sp], rp</code><br><code>sub sp, 4</code></td>
+    </tr>
+    <tr>
+        <td><code>push imm</code></td>
+        <td>Push immediate<br><b>Effects t3 register</b></td>
+        <td><code>push 45</code></td>
+        <td><code>mov t3, 45</code><br><code>mov word [sp], t3</code><br><code>sub sp, 4</code></td>
+    </tr>
+    <tr>
+        <td><code>pop reg</code></td>
+        <td>Pop register</td>
+        <td><code>pop rp</code></td>
+        <td><code>add sp, 4</code><br><code>mov rp, word [sp]</code></td>
+    </tr>
+    <tr>
+        <td colspan="4"></td>
+    </tr>
+    <tr>
+        <td colspan="4"><i>Other jump conditions:</i></td>
     </tr>
     <tr>
         <td><code>jb</code></td>
@@ -675,42 +739,6 @@ are used to make the Kora assembler look more like x86 assembler:
         <td>Jump less or equal</td>
         <td><code>jle label</code></td>
         <td><code>jng label</code></td>
-    </tr>
-    <tr>
-        <td colspan="4"></td>
-    </tr>
-    <tr>
-        <td colspan="4"><i>Other helpers:</i></td>
-    </tr>
-    <tr>
-        <td><code>nop</code></td>
-        <td>No operation</td>
-        <td><code>nop</code></td>
-        <td><code>mov t0, t0</code></td>
-    </tr>
-    <tr>
-        <td><code>inc</code></td>
-        <td>Increment register</td>
-        <td><code>inc t0</code></td>
-        <td><code>add t0, 1</code></td>
-    </tr>
-    <tr>
-        <td><code>dec</code></td>
-        <td>Decrement register</td>
-        <td><code>dec t0</code></td>
-        <td><code>sub t0, 1</code></td>
-    </tr>
-    <tr>
-        <td><code>hlt</code></td>
-        <td>Set halt flag</td>
-        <td><code>hlt</code></td>
-        <td><code>or flags, 1 << 8</code></td>
-    </tr>
-    <tr>
-        <td><code>ret</code></td>
-        <td>Return from function</td>
-        <td><code>ret</code><br><code>ret s0</code></td>
-        <td><code>jmp rp</code><br><code>jmp s0</code></td>
     </tr>
 </table>
 
@@ -786,7 +814,7 @@ strcpy:
 strcat:
     ; a0 = dest
     ; a1 = src
-    mov s0, rp
+    push rp
 .repeat:
     mov t0, byte [a0]
     cmp t0, 0
@@ -795,5 +823,6 @@ strcat:
     jmp .repeat
 .done:
     call strcpy
-    ret s0
+    pop rp
+    ret
 ```
