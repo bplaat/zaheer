@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taro</title>
+    <link rel="icon" href="data:,">
+</head>
+
+<body>
+    <canvas id="canvas" width="640" height="480" style="border: 1px solid black; image-rendering: pixelated;"></canvas>
+    <script type="module">
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const framebuffer = ctx.createImageData(640, 480);
+
+        const { instance } = await WebAssembly.instantiateStreaming(fetch('taro.wasm'));
+        const vram = new Uint8Array(instance.exports.memory.buffer);
+
+        function degrees(radians) {
+            return radians * (180 / Math.PI);
+        }
+
+        function radians(degrees) {
+            return degrees * (Math.PI / 180);
+        }
+
+        class Vector4 {
+            constructor(x = 0, y = 0, z = 0, w = 1) {
+                this.x = x;
+                this.y = y;
+                this.z = z;
+                this.w = w;
+            }
+
+            clone() {
+                return new Vector4(this.x, this.y, this.z, this.w);
+            }
+
+            mul(rhs) {
+                if (rhs instanceof Matrix4) {
+                    const x = rhs.elements[0 * 4 + 0] * this.x + rhs.elements[1 * 4 + 0] * this.y + rhs.elements[2 * 4 + 0] * this.z + rhs.elements[3 * 4 + 0] * this.w;
+                    const y = rhs.elements[0 * 4 + 1] * this.x + rhs.elements[1 * 4 + 1] * this.y + rhs.elements[2 * 4 + 1] * this.z + rhs.elements[3 * 4 + 1] * this.w;
+                    const z = rhs.elements[0 * 4 + 2] * this.x + rhs.elements[1 * 4 + 2] * this.y + rhs.elements[2 * 4 + 2] * this.z + rhs.elements[3 * 4 + 2] * this.w;
+                    const w = rhs.elements[0 * 4 + 3] * this.x + rhs.elements[1 * 4 + 3] * this.y + rhs.elements[2 * 4 + 3] * this.z + rhs.elements[3 * 4 + 3] * this.w;
+                    this.x = x;
+                    this.y = y;
+                    this.z = z;
+                    this.w = w;
+                }
+                return this;
+            }
+
+            div(rhs) {
+                if (!isNaN(rhs)) {
+                    this.x /= rhs;
+                    this.y /= rhs;
+                    this.z /= rhs;
+                    this.w /= rhs;
+                }
+                return this;
+            }
+        }
+
+        class Matrix4 {
+            constructor(elements) {
+                this.elements = elements;
+            }
+
+            clone() {
+                return new Matrix4(this.elements);
+            }
+
+            mul(matrix) {
+                const b00 = matrix.elements[0 * 4 + 0];
+                const b01 = matrix.elements[0 * 4 + 1];
+                const b02 = matrix.elements[0 * 4 + 2];
+                const b03 = matrix.elements[0 * 4 + 3];
+                const b10 = matrix.elements[1 * 4 + 0];
+                const b11 = matrix.elements[1 * 4 + 1];
+                const b12 = matrix.elements[1 * 4 + 2];
+                const b13 = matrix.elements[1 * 4 + 3];
+                const b20 = matrix.elements[2 * 4 + 0];
+                const b21 = matrix.elements[2 * 4 + 1];
+                const b22 = matrix.elements[2 * 4 + 2];
+                const b23 = matrix.elements[2 * 4 + 3];
+                const b30 = matrix.elements[3 * 4 + 0];
+                const b31 = matrix.elements[3 * 4 + 1];
+                const b32 = matrix.elements[3 * 4 + 2];
+                const b33 = matrix.elements[3 * 4 + 3];
+                const a00 = this.elements[0 * 4 + 0];
+                const a01 = this.elements[0 * 4 + 1];
+                const a02 = this.elements[0 * 4 + 2];
+                const a03 = this.elements[0 * 4 + 3];
+                const a10 = this.elements[1 * 4 + 0];
+                const a11 = this.elements[1 * 4 + 1];
+                const a12 = this.elements[1 * 4 + 2];
+                const a13 = this.elements[1 * 4 + 3];
+                const a20 = this.elements[2 * 4 + 0];
+                const a21 = this.elements[2 * 4 + 1];
+                const a22 = this.elements[2 * 4 + 2];
+                const a23 = this.elements[2 * 4 + 3];
+                const a30 = this.elements[3 * 4 + 0];
+                const a31 = this.elements[3 * 4 + 1];
+                const a32 = this.elements[3 * 4 + 2];
+                const a33 = this.elements[3 * 4 + 3];
+
+                this.elements = [
+                    b00 * a00 + b01 * a10 + b02 * a20 + b03 * a30,
+                    b00 * a01 + b01 * a11 + b02 * a21 + b03 * a31,
+                    b00 * a02 + b01 * a12 + b02 * a22 + b03 * a32,
+                    b00 * a03 + b01 * a13 + b02 * a23 + b03 * a33,
+                    b10 * a00 + b11 * a10 + b12 * a20 + b13 * a30,
+                    b10 * a01 + b11 * a11 + b12 * a21 + b13 * a31,
+                    b10 * a02 + b11 * a12 + b12 * a22 + b13 * a32,
+                    b10 * a03 + b11 * a13 + b12 * a23 + b13 * a33,
+                    b20 * a00 + b21 * a10 + b22 * a20 + b23 * a30,
+                    b20 * a01 + b21 * a11 + b22 * a21 + b23 * a31,
+                    b20 * a02 + b21 * a12 + b22 * a22 + b23 * a32,
+                    b20 * a03 + b21 * a13 + b22 * a23 + b23 * a33,
+                    b30 * a00 + b31 * a10 + b32 * a20 + b33 * a30,
+                    b30 * a01 + b31 * a11 + b32 * a21 + b33 * a31,
+                    b30 * a02 + b31 * a12 + b32 * a22 + b33 * a32,
+                    b30 * a03 + b31 * a13 + b32 * a23 + b33 * a33
+                ];
+                return this;
+            }
+
+            static identity() {
+                return new Matrix4([
+                    1, 0, 0, 0,
+                    0, 1, 0, 0,
+                    0, 0, 1, 0,
+                    0, 0, 0, 1
+                ]);
+            }
+
+            static perspective(fov, aspect, near, far) {
+                const f = Math.tan(Math.PI * 0.5 - 0.5 * fov);
+                const r = 1.0 / (near - far);
+                return new Matrix4([
+                    f / aspect, 0, 0, 0,
+                    0, f, 0, 0,
+                    0, 0, (near + far) * r, -1,
+                    0, 0, near * far * r * 2, 0
+                ]);
+            }
+
+            static translate(x, y, z) {
+                return new Matrix4([
+                    1, 0, 0, 0,
+                    0, 1, 0, 0,
+                    0, 0, 1, 0,
+                    x, y, z, 1
+                ]);
+            }
+
+            static rotateX(x) {
+                const c = Math.cos(x);
+                const s = Math.sin(x);
+                return new Matrix4([
+                    1, 0, 0, 0,
+                    0, c, s, 0,
+                    0, -s, c, 0,
+                    0, 0, 0, 1
+                ]);
+            }
+
+            static rotateY(y) {
+                const c = Math.cos(y);
+                const s = Math.sin(y);
+                return new Matrix4([
+                    c, 0, -s, 0,
+                    0, 1, 0, 0,
+                    s, 0, c, 0,
+                    0, 0, 0, 1
+                ]);
+            }
+
+            static rotateZ(z) {
+                const c = Math.cos(z);
+                const s = Math.sin(z);
+                return new Matrix4([
+                    c, s, 0, 0,
+                    -s, c, 0, 0,
+                    0, 0, 1, 0,
+                    0, 0, 0, 1
+                ]);
+            }
+
+            static scale(x, y, z) {
+                return new Matrix4([
+                    x, 0, 0, 0,
+                    0, y, 0, 0,
+                    0, 0, z, 0,
+                    0, 0, 0, 1
+                ]);
+            }
+        }
+
+        const TARO_CMD_OFFSET = 0;
+        const TEXTURE_OFFSET = 0x10000;
+        const FRAMEBUFFER_OFFSET = TEXTURE_OFFSET + (64 * 64 * 3);
+
+        const CMD_DONE = 0;
+        const CMD_SET_FRAMEBUFFER = 1;
+        const CMD_SET_CLIP = 2;
+        const CMD_CLEAR = 3;
+        const CMD_TRIANGLE = 4;
+        const CMD_TRIANGLE_TEXTURED = 5;
+
+        function parseOBJ(objText) {
+            const lines = objText.split('\n');
+            const vertices = [];
+            const texCoords = [];
+            const normals = [];
+            let faces = [];
+            const groups = [];
+
+            let currentColor = [0, 0, 0];
+
+            for (const line of lines) {
+                const tokens = line.trim().split(/\s+/);
+                const keyword = tokens[0];
+
+                switch (keyword) {
+                    case 'usemtl':
+                        currentColor = tokens.slice(1).map(parseFloat);
+                        break;
+                    case 'v':
+                        vertices.push(tokens.slice(1).map(parseFloat));
+                        break;
+                    case 'vt':
+                        texCoords.push(tokens.slice(1).map(parseFloat));
+                        break;
+                    case 'vn':
+                        normals.push(tokens.slice(1).map(parseFloat));
+                        break;
+                    case 'f':
+                        const face = tokens.slice(1).map((vertexDesc) => {
+                            const components = vertexDesc.split('/');
+                            const vertexIndex = parseInt(components[0]) - 1;
+                            const texCoordIndex = components[1] ? parseInt(components[1]) - 1 : undefined;
+                            const normalIndex = components[2] ? parseInt(components[2]) - 1 : undefined;
+                            return { vertexIndex, texCoordIndex, normalIndex, currentColor };
+                        });
+                        faces.push(face);
+                        break;
+                }
+            }
+            return { faces, vertices, texCoords, normals };
+        }
+
+        const obj = parseOBJ(await(await fetch('police.obj')).text());
+
+
+
+        const image = new Image();
+        image.src = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAgICAgJCAkKCgkNDgwODRMREBARExwUFhQWFBwrGx8bGx8bKyYuJSMlLiZENS8vNUROQj5CTl9VVV93cXecnNEBCAgICAkICQoKCQ0ODA4NExEQEBETHBQWFBYUHCsbHxsbHxsrJi4lIyUuJkQ1Ly81RE5CPkJOX1VVX3dxd5yc0f/CABEIAEAAQAMBIgACEQEDEQH/xAAyAAACAwEBAAAAAAAAAAAAAAADBAEFBgIAAQEBAQADAQAAAAAAAAAAAAABAgMABAUG/9oADAMBAAIQAxAAAACRQP5z2itZ6bnV8ZbmW/jI6eiXeHstK9VoNzISiSivqTUXPbSJutspxE7Z+CQCVmxxmvFBGxBLRN2Tek0a+oEcymoGSX//xAAzEAACAQMCBAQEAwkAAAAAAAABAgMABBESIRMxQVEFYpGhFCIygUNxsRVCYYKissLR8v/aAAgBAQABPwBXEkar5aQKMjCZBIORSJG2dQGx7VGEDYEfsaR41OTCPTFTPE5A0igkaSxsBycdauTxop32znFQrpVGxvhc+lcNmcnjaSzMdO+dqYXQjtSJny/M4G9LJfIiabmQEu67Y6Gol8RljZ3uZS2CRv2NTpdJDqM8mrONjVlPfG/gEk7shcjB/I1JlYGA6oT96jjJiU5/dG1eHRyMRINOAWx351wc21kTgVwg8Zxy4sm/3q0QcN17I361cBPhz1+bPtVvg3MRHWX/ABNTR4iY5zsahjIWLlvGp9asDpXR11NTEmCzFR50Mvnc1aDCSnysP6qlC8DB7n9KsgGuLNQv1TkZ/lNPGTFINutWOZIrbqeEvsKtsrOwwdnbJ6DaoyGhtT5aQ6Yc93bY1B9Dt3B/uq4PyfwzirP5JYCOYuQRQUvHOw7H3rw6RhBCcfhgj0qCYNcTt5hn0FRyLwLZV6A0HXgAeZqtyOBIeX/VXeTbsQdw1QYUQsD+OBSTFYnyOm9QMVt4weYiHstGS5SWThwMwODkdaH7SVYAICNGaT4/hqog1Y1cyM70kXjPDkQWp35YK77/AJ1c2/jPAKfDkZYn6l/3UEPiCvah7fSiyBmORUr4hPp7GlJES43BjNQzgLp1AHJ6io5IwTkgnORvUUoc7SxjbqwFG9jjOPiYiR2bNSeIQlhmRfvinuYJSqCRCSw5Yq+JWMxiv//EACURAAIBAgYABwAAAAAAAAAAAAABAgMREyExMkFxQlFSU2KB0f/aAAgBAgEBPwBpXfkYfyMJX3onTcHHO5N69i57PE+yq7NE9ZH6Lf8AZW1RzLK45y9CFVn7cScnJxbVj//EACQRAAIBAQcFAQAAAAAAAAAAAAABAjEREhMhQlJiAxBBUYFx/9oACAEDAQE/AFRF/iYnEjO8nkRVPw9Gn4QzTI0j20/DpUZ4WYoLczDjvZFKKdjtP//Z';
+        image.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = image.width;
+            canvas.height = image.height;
+            ctx.drawImage(image, 0, 0);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+            let pos = TEXTURE_OFFSET;
+            for (let i = 0; i < 64 * 64; i++) {
+                vram[pos++] = imageData.data[i * 4 + 0];
+                vram[pos++] = imageData.data[i * 4 + 1];
+                vram[pos++] = imageData.data[i * 4 + 2];
+            }
+
+            loop();
+        };
+
+
+
+        let rotation = 0;
+
+        function update() {
+            rotation += 1;
+        }
+
+        function render() {
+            const view = new DataView(instance.exports.memory.buffer);
+
+            let pos = TARO_CMD_OFFSET;
+
+            view.setUint8(pos++, CMD_SET_FRAMEBUFFER);
+            view.setUint32(pos, FRAMEBUFFER_OFFSET, true); pos += 4;
+
+            view.setUint8(pos++, CMD_SET_CLIP);
+            view.setUint16(pos, 0, true); pos += 2;
+            view.setUint16(pos, 0, true); pos += 2;
+            view.setUint16(pos, 640, true); pos += 2;
+            view.setUint16(pos, 480, true); pos += 2;
+
+            view.setUint8(pos++, CMD_CLEAR);
+            view.setUint8(pos++, 255);
+            view.setUint8(pos++, 255);
+            view.setUint8(pos++, 0);
+
+            const camera = Matrix4.perspective(radians(45), framebuffer.width / framebuffer.height, 0.1, 1000)
+
+            for (let y = -3; y <= 3; y++) {
+                for (let x = -3; x <= 3; x++) {
+                    const matrix = Matrix4.translate(x, y, -9)
+                        .mul(Matrix4.rotateX(radians(rotation)))
+                        .mul(Matrix4.rotateY(radians(rotation)))
+                        .mul(Matrix4.scale(0.8, 0.8, 1));
+
+                    {
+                        view.setUint8(pos++, CMD_TRIANGLE_TEXTURED);
+                        view.setUint32(pos, TEXTURE_OFFSET, true); pos += 4;
+                        view.setUint8(pos++, 64);
+
+                        const vertice0 = new Vector4(-0.5, -0.5, 0).mul(matrix).mul(camera);
+                        const vertice0x = Math.floor((vertice0.x / vertice0.w + 1) * (framebuffer.width / 2));
+                        const vertice0y = Math.floor((-vertice0.y / vertice0.w + 1) * (framebuffer.height / 2));
+
+                        view.setUint16(pos, vertice0x, true); pos += 2;
+                        view.setUint16(pos, vertice0y, true); pos += 2;
+                        view.setUint8(pos++, 0x80);
+                        view.setUint8(pos++, 0x80);
+                        view.setUint8(pos++, 0x80);
+                        view.setUint8(pos++, 0);
+                        view.setUint8(pos++, 0);
+
+                        const vertice1 = new Vector4(0.5, -0.5, 0).mul(matrix).mul(camera);
+                        const vertice1x = Math.floor((vertice1.x / vertice1.w + 1) * (framebuffer.width / 2));
+                        const vertice1y = Math.floor((-vertice1.y / vertice1.w + 1) * (framebuffer.height / 2));
+
+                        view.setUint16(pos, vertice1x, true); pos += 2;
+                        view.setUint16(pos, vertice1y, true); pos += 2;
+                        view.setUint8(pos++, 0x80);
+                        view.setUint8(pos++, 0x80);
+                        view.setUint8(pos++, 0x80);
+                        view.setUint8(pos++, 64);
+                        view.setUint8(pos++, 0);
+
+                        const vertice2 = new Vector4(0.5, 0.5, 0).mul(matrix).mul(camera);
+                        const vertice2x = Math.floor((vertice2.x / vertice2.w + 1) * (framebuffer.width / 2));
+                        const vertice2y = Math.floor((-vertice2.y / vertice2.w + 1) * (framebuffer.height / 2));
+
+                        view.setUint16(pos, vertice2x, true); pos += 2;
+                        view.setUint16(pos, vertice2y, true); pos += 2;
+                        view.setUint8(pos++, 0x80);
+                        view.setUint8(pos++, 0x80);
+                        view.setUint8(pos++, 0x80);
+                        view.setUint8(pos++, 64);
+                        view.setUint8(pos++, 64);
+                    }
+
+                    {
+                        view.setUint8(pos++, CMD_TRIANGLE_TEXTURED);
+                        view.setUint32(pos, TEXTURE_OFFSET, true); pos += 4;
+                        view.setUint8(pos++, 64);
+
+                        const vertice0 = new Vector4(-0.5, -0.5, 0).mul(matrix).mul(camera);
+                        const vertice0x = Math.floor((vertice0.x / vertice0.w + 1) * (framebuffer.width / 2));
+                        const vertice0y = Math.floor((-vertice0.y / vertice0.w + 1) * (framebuffer.height / 2));
+
+                        view.setUint16(pos, vertice0x, true); pos += 2;
+                        view.setUint16(pos, vertice0y, true); pos += 2;
+                        view.setUint8(pos++, 0xff);
+                        view.setUint8(pos++, 0xff);
+                        view.setUint8(pos++, 0xff);
+                        view.setUint8(pos++, 0);
+                        view.setUint8(pos++, 0);
+
+                        const vertice1 = new Vector4(0.5, 0.5, 0).mul(matrix).mul(camera);
+                        const vertice1x = Math.floor((vertice1.x / vertice1.w + 1) * (framebuffer.width / 2));
+                        const vertice1y = Math.floor((-vertice1.y / vertice1.w + 1) * (framebuffer.height / 2));
+
+                        view.setUint16(pos, vertice1x, true); pos += 2;
+                        view.setUint16(pos, vertice1y, true); pos += 2;
+                        view.setUint8(pos++, 0xff);
+                        view.setUint8(pos++, 0xff);
+                        view.setUint8(pos++, 0xff);
+                        view.setUint8(pos++, 64);
+                        view.setUint8(pos++, 64);
+
+                        const vertice2 = new Vector4(-0.5, 0.5, 0).mul(matrix).mul(camera);
+                        const vertice2x = Math.floor((vertice2.x / vertice2.w + 1) * (framebuffer.width / 2));
+                        const vertice2y = Math.floor((-vertice2.y / vertice2.w + 1) * (framebuffer.height / 2));
+
+                        view.setUint16(pos, vertice2x, true); pos += 2;
+                        view.setUint16(pos, vertice2y, true); pos += 2;
+                        view.setUint8(pos++, 0xff);
+                        view.setUint8(pos++, 0xff);
+                        view.setUint8(pos++, 0xff);
+                        view.setUint8(pos++, 0);
+                        view.setUint8(pos++, 64);
+                    }
+                }
+            }
+
+
+
+
+
+            function faceDepth(face, vertices, matrix, camera) {
+                const a = new Vector4(vertices[face[0].vertexIndex][0], vertices[face[0].vertexIndex][1], vertices[face[0].vertexIndex][2])
+                    .mul(matrix).mul(camera);
+                const b = new Vector4(vertices[face[1].vertexIndex][0], vertices[face[1].vertexIndex][1], vertices[face[1].vertexIndex][2])
+                    .mul(matrix).mul(camera);
+                const c = new Vector4(vertices[face[2].vertexIndex][0], vertices[face[2].vertexIndex][1], vertices[face[2].vertexIndex][2])
+                    .mul(matrix).mul(camera);
+                return (a.w + b.w + c.w) / face.length;
+            }
+
+            // const matrix = Matrix4.translate(0, 0, -5)
+            //     .mul(Matrix4.rotateX(radians(rotation)))
+            //     .mul(Matrix4.rotateY(radians(rotation)))
+            //     .mul(Matrix4.scale(1, 1, 1));
+
+            // const matrix = Matrix4.translate(0, 2, -7)
+            //     .mul(Matrix4.rotateX(radians(180)))
+            //     .mul(Matrix4.rotateY(radians(rotation)))
+            //     .mul(Matrix4.scale(1, 1, 1));
+
+            const matrix = Matrix4.translate(0, 1, -4)
+                .mul(Matrix4.rotateX(radians(180)))
+                .mul(Matrix4.rotateY(radians(-rotation)));
+
+            obj.faces.sort((a, b) => {
+                return faceDepth(b, obj.vertices, matrix, camera) -
+                    faceDepth(a, obj.vertices, matrix, camera);
+            });
+
+            for (const face of obj.faces) {
+                view.setUint8(pos++, CMD_TRIANGLE);
+
+                const vertice0 = new Vector4(
+                    obj.vertices[face[0].vertexIndex][0],
+                    obj.vertices[face[0].vertexIndex][1],
+                    obj.vertices[face[0].vertexIndex][2]
+                ).mul(matrix).mul(camera);
+                view.setInt16(pos, (vertice0.x / vertice0.w + 1) * (640 / 2), true); pos += 2;
+                view.setInt16(pos, (vertice0.y / vertice0.w + 1) * (480 / 2), true); pos += 2;
+                view.setUint8(pos++, face[0].currentColor[0] * 0xff);
+                view.setUint8(pos++, face[0].currentColor[1] * 0xff);
+                view.setUint8(pos++, face[0].currentColor[2] * 0xff);
+
+                const vertice1 = new Vector4(
+                    obj.vertices[face[1].vertexIndex][0],
+                    obj.vertices[face[1].vertexIndex][1],
+                    obj.vertices[face[1].vertexIndex][2]
+                ).mul(matrix).mul(camera);
+                view.setInt16(pos, (vertice1.x / vertice1.w + 1) * (640 / 2), true); pos += 2;
+                view.setInt16(pos, (vertice1.y / vertice1.w + 1) * (480 / 2), true); pos += 2;
+                view.setUint8(pos++, face[1].currentColor[0] * 0xff);
+                view.setUint8(pos++, face[1].currentColor[1] * 0xff);
+                view.setUint8(pos++, face[1].currentColor[2] * 0xff);
+
+                const vertice2 = new Vector4(
+                    obj.vertices[face[2].vertexIndex][0],
+                    obj.vertices[face[2].vertexIndex][1],
+                    obj.vertices[face[2].vertexIndex][2]
+                ).mul(matrix).mul(camera);
+                view.setInt16(pos, (vertice2.x / vertice2.w + 1) * (640 / 2), true); pos += 2;
+                view.setInt16(pos, (vertice2.y / vertice2.w + 1) * (480 / 2), true); pos += 2;
+                view.setUint8(pos++, face[2].currentColor[0] * 0xff);
+                view.setUint8(pos++, face[2].currentColor[1] * 0xff);
+                view.setUint8(pos++, face[2].currentColor[2] * 0xff);
+            }
+
+            view.setUint8(pos++, CMD_DONE);
+        }
+
+        function loop() {
+            update();
+            render();
+
+            instance.exports.clock(TARO_CMD_OFFSET);
+
+            for (let y = 0; y < 480; y++) {
+                for (let x = 0; x < 640; x++) {
+                    const dest = (y * 640 + x) * 4;
+                    const src = FRAMEBUFFER_OFFSET + (y * 640 + x) * 3;
+                    framebuffer.data[dest] = vram[src];
+                    framebuffer.data[dest + 1] = vram[src + 1];
+                    framebuffer.data[dest + 2] = vram[src + 2];
+                    framebuffer.data[dest + 3] = 0xff;
+                }
+            }
+            ctx.putImageData(framebuffer, 0, 0);
+            window.requestAnimationFrame(loop);
+        }
+    </script>
+</body>
+
+</html>
