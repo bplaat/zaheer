@@ -4,19 +4,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taro</title>
+    <title>Taro Emulator</title>
     <link rel="icon" href="data:,">
+    <style>
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #eee;
+        }
+    </style>
 </head>
 
 <body>
-    <canvas id="canvas" width="640" height="480" style="border: 1px solid black; image-rendering: pixelated;"></canvas>
+    <canvas id="canvas" width="1280" height="960" style="border: 2px solid black;"></canvas>
     <script type="module">
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        const framebuffer = ctx.createImageData(640, 480);
+
+        const FRAMEBUFFER_WIDTH = 320;
+        const FRAMEBUFFER_HEIGHT = 480;
+
+        const framebuffer = ctx.createImageData(canvas.width, canvas.height);
 
         const { instance } = await WebAssembly.instantiateStreaming(fetch('taro.wasm'));
-        const vram = new Uint8Array(instance.exports.memory.buffer);
+        const vram = new DataView(instance.exports.memory.buffer);
 
         function degrees(radians) {
             return radians * (180 / Math.PI);
@@ -36,6 +54,15 @@
 
             clone() {
                 return new Vector4(this.x, this.y, this.z, this.w);
+            }
+
+            add(rhs) {
+                if (rhs instanceof Vector4) {
+                    this.x += rhs.x;
+                    this.y += rhs.y;
+                    this.z += rhs.z;
+                    this.w += rhs.w;
+                }
             }
 
             mul(rhs) {
@@ -200,8 +227,8 @@
         }
 
         const TARO_CMD_OFFSET = 0;
-        const TEXTURE_OFFSET = 0x10000;
-        const FRAMEBUFFER_OFFSET = TEXTURE_OFFSET + (64 * 64 * 3);
+        const CRATE_TEXTURE_OFFSET = TARO_CMD_OFFSET + 0x10000;
+        const FRAMEBUFFER_OFFSET = CRATE_TEXTURE_OFFSET + (64 * 64 * 2);
 
         const CMD_DONE = 0;
         const CMD_SET_FRAMEBUFFER = 1;
@@ -254,153 +281,133 @@
 
         const obj = parseOBJ(await(await fetch('police.obj')).text());
 
-
-
-        const image = new Image();
-        image.src = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAgICAgJCAkKCgkNDgwODRMREBARExwUFhQWFBwrGx8bGx8bKyYuJSMlLiZENS8vNUROQj5CTl9VVV93cXecnNEBCAgICAkICQoKCQ0ODA4NExEQEBETHBQWFBYUHCsbHxsbHxsrJi4lIyUuJkQ1Ly81RE5CPkJOX1VVX3dxd5yc0f/CABEIAEAAQAMBIgACEQEDEQH/xAAyAAACAwEBAAAAAAAAAAAAAAADBAEFBgIAAQEBAQADAQAAAAAAAAAAAAABAgMABAUG/9oADAMBAAIQAxAAAACRQP5z2itZ6bnV8ZbmW/jI6eiXeHstK9VoNzISiSivqTUXPbSJutspxE7Z+CQCVmxxmvFBGxBLRN2Tek0a+oEcymoGSX//xAAzEAACAQMCBAQEAwkAAAAAAAABAgMABBESIRMxQVEFYpGhFCIygUNxsRVCYYKissLR8v/aAAgBAQABPwBXEkar5aQKMjCZBIORSJG2dQGx7VGEDYEfsaR41OTCPTFTPE5A0igkaSxsBycdauTxop32znFQrpVGxvhc+lcNmcnjaSzMdO+dqYXQjtSJny/M4G9LJfIiabmQEu67Y6Gol8RljZ3uZS2CRv2NTpdJDqM8mrONjVlPfG/gEk7shcjB/I1JlYGA6oT96jjJiU5/dG1eHRyMRINOAWx351wc21kTgVwg8Zxy4sm/3q0QcN17I361cBPhz1+bPtVvg3MRHWX/ABNTR4iY5zsahjIWLlvGp9asDpXR11NTEmCzFR50Mvnc1aDCSnysP6qlC8DB7n9KsgGuLNQv1TkZ/lNPGTFINutWOZIrbqeEvsKtsrOwwdnbJ6DaoyGhtT5aQ6Yc93bY1B9Dt3B/uq4PyfwzirP5JYCOYuQRQUvHOw7H3rw6RhBCcfhgj0qCYNcTt5hn0FRyLwLZV6A0HXgAeZqtyOBIeX/VXeTbsQdw1QYUQsD+OBSTFYnyOm9QMVt4weYiHstGS5SWThwMwODkdaH7SVYAICNGaT4/hqog1Y1cyM70kXjPDkQWp35YK77/AJ1c2/jPAKfDkZYn6l/3UEPiCvah7fSiyBmORUr4hPp7GlJES43BjNQzgLp1AHJ6io5IwTkgnORvUUoc7SxjbqwFG9jjOPiYiR2bNSeIQlhmRfvinuYJSqCRCSw5Yq+JWMxiv//EACURAAIBAgYABwAAAAAAAAAAAAABAgMREyExMkFxQlFSU2KB0f/aAAgBAgEBPwBpXfkYfyMJX3onTcHHO5N69i57PE+yq7NE9ZH6Lf8AZW1RzLK45y9CFVn7cScnJxbVj//EACQRAAIBAQcFAQAAAAAAAAAAAAABAjEREhMhQlJiAxBBUYFx/9oACAEDAQE/AFRF/iYnEjO8nkRVPw9Gn4QzTI0j20/DpUZ4WYoLczDjvZFKKdjtP//Z';
-        image.onload = () => {
+        const crateImage = new Image();
+        crateImage.src = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAgICAgJCAkKCgkNDgwODRMREBARExwUFhQWFBwrGx8bGx8bKyYuJSMlLiZENS8vNUROQj5CTl9VVV93cXecnNEBCAgICAkICQoKCQ0ODA4NExEQEBETHBQWFBYUHCsbHxsbHxsrJi4lIyUuJkQ1Ly81RE5CPkJOX1VVX3dxd5yc0f/CABEIAEAAQAMBIgACEQEDEQH/xAAwAAACAwEBAAAAAAAAAAAAAAADBAECBQAGAQADAQEAAAAAAAAAAAAAAAAAAQIDBP/aAAwDAQACEAMQAAAA8cNkPF1mrogQk3k7DAbaTsvzFDK3O+mwtneVZg2kazEL53kmLNIvAqjO1k3GRRJ0HKUTR14GznlDBQiLwf/EADUQAAICAQIDAgwFBQAAAAAAAAECAxEABBITITFBUQUUIiMyYWJxgaGxwSRykbLRM0JDUsL/2gAIAQEAAT8A1TlOCwjsuOg78j1NAk6Z/wBFPX44J/JJ8Teq9LkD9cbUbKPAmCjr069e/G8IAPR085J9Yw6uaNSDDL07gfviyFxb6ebr1AX5c80civFIVWRabbTeoXea7a7aNfarN1mqoblywIgWNA5M/EgcCvSX6ZKSXUD/AFGSapNyIBv7KurOREk0UBrmazwbJvi1TP5Pnu38ozXMv4dbIPFv4VhlQkA9BIublMEabOi3mqfZpJCFABMYGKHdBI9bdvQ9uadJWkB9dcsRFfh7CqR7KHtVmiAYaobf8xFH8o554RR9sAaq4xojnZo48J27gf7lrAQsDKeuw884TTaYcQHhWG9+0ZMTJagdB5K9wyOHZAhckB3ANdowlIxGsYrzZo+u8005V9QL5mZv2jJgzamKMdmoNfEHBHUSo689/XEhUq1m0C1fecklk4YRfTAoAcgM19hCie9z1LX9s1TNLpYEo8m+QGQaxXcLIKtWPyGaE8SScoDu4h/bh0rQa2J5D5PHPusg5q5oFbZtNLzsdpx5aRFVeVdOnXtOOfMUhPprz7765qRxeKipz2hryYIkcVHs5jAbnRiTflCh0rPBOweMix/V/W1zXHc8BZzsE/2PXNTwUiWFFBAa+fW+84Y3rbu9Km7t2O21I172Q45uWR+6Nfrmuao4romsih3auPmL2ub7DyGaGFEfU76sTf8AOalGnYWzr53dYrG0s4a+PIPfX8YdDI1F9RIaodmNoSeXjMhqu49Mi8HBtwfUyAEUen8ZLo1cqPGpjtHs19M8VlEkT8eT2arlfwyBNgmVixZpN4dq61Wf/8QAHREAAgMAAgMAAAAAAAAAAAAAAAERITFBUQJSwf/aAAgBAgEBPwDgkfFHlgsQvpJsnRB6jpMUVZK7KlWPNP/EABwRAAEEAwEAAAAAAAAAAAAAAAABIUFREBFxgf/aAAgBAwEBPwDCS4hKimsWbLJPB6HcTh//2Q==';
+        crateImage.onload = () => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            canvas.width = image.width;
-            canvas.height = image.height;
-            ctx.drawImage(image, 0, 0);
+            canvas.width = crateImage.width;
+            canvas.height = crateImage.height;
+            ctx.drawImage(crateImage, 0, 0);
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-            let pos = TEXTURE_OFFSET;
-            for (let i = 0; i < 64 * 64; i++) {
-                vram[pos++] = imageData.data[i * 4 + 0];
-                vram[pos++] = imageData.data[i * 4 + 1];
-                vram[pos++] = imageData.data[i * 4 + 2];
+            let pos = CRATE_TEXTURE_OFFSET;
+            for (let i = 0; i < imageData.height * imageData.width; i++) {
+                vram.setUint16(pos, ((imageData.data[i * 4 + 0] >> 3) |
+                    ((imageData.data[i * 4 + 1] >> 2) << 5) |
+                    ((imageData.data[i * 4 + 2] >> 3) << 11)), true);
+                pos += 2;
             }
 
             loop();
         };
 
 
-
         let rotation = 0;
+        let police = { position: new Vector4(0, 2, -6), angle: 0 };
+
+        const keys = {};
+        window.addEventListener('keydown', event => keys[event.key] = true);
+        window.addEventListener('keyup', event => keys[event.key] = false);
 
         function update() {
             rotation += 1;
+
+            const speed = 0.1;
+            const change = new Vector4();
+            if (keys['w']) change.z -= speed;
+            if (keys['a']) police.angle -= radians(2);
+            if (keys['d']) police.angle += radians(2);
+            if (keys['s']) change.z += speed;
+            police.position.add(change.mul(Matrix4.rotateY(-police.angle)));
         }
 
         function render() {
-            const view = new DataView(instance.exports.memory.buffer);
-
             let pos = TARO_CMD_OFFSET;
 
-            view.setUint8(pos++, CMD_SET_FRAMEBUFFER);
-            view.setUint32(pos, FRAMEBUFFER_OFFSET, true); pos += 4;
+            vram.setUint8(pos++, CMD_SET_FRAMEBUFFER);
+            vram.setUint32(pos, FRAMEBUFFER_OFFSET, true); pos += 4;
+            vram.setUint16(pos, FRAMEBUFFER_WIDTH, true); pos += 2;
 
-            view.setUint8(pos++, CMD_SET_CLIP);
-            view.setUint16(pos, 0, true); pos += 2;
-            view.setUint16(pos, 0, true); pos += 2;
-            view.setUint16(pos, 640, true); pos += 2;
-            view.setUint16(pos, 480, true); pos += 2;
+            vram.setUint8(pos++, CMD_SET_CLIP);
+            vram.setUint16(pos, 0, true); pos += 2;
+            vram.setUint16(pos, 0, true); pos += 2;
+            vram.setUint16(pos, FRAMEBUFFER_WIDTH - 1, true); pos += 2;
+            vram.setUint16(pos, FRAMEBUFFER_HEIGHT - 1, true); pos += 2;
 
-            view.setUint8(pos++, CMD_CLEAR);
-            view.setUint8(pos++, 255);
-            view.setUint8(pos++, 255);
-            view.setUint8(pos++, 0);
+            vram.setUint8(pos++, CMD_CLEAR);
+            vram.setUint16(pos, (31 | (63 << 5) | (0 << 11)), true); pos += 2;
 
-            const camera = Matrix4.perspective(radians(45), framebuffer.width / framebuffer.height, 0.1, 1000)
+            const camera = Matrix4.perspective(radians(45), 4 / 3, 0.1, 1000)
+                .mul(Matrix4.translate(0, 0, -2));
 
-            for (let y = -3; y <= 3; y++) {
-                for (let x = -3; x <= 3; x++) {
-                    const matrix = Matrix4.translate(x, y, -9)
-                        .mul(Matrix4.rotateX(radians(rotation)))
-                        .mul(Matrix4.rotateY(radians(rotation)))
-                        .mul(Matrix4.scale(0.8, 0.8, 1));
+            {
+                const matrix = Matrix4.translate(0, -0.5, -2)
+                    .mul(Matrix4.rotateX(-Math.PI / 2))
+                    .mul(Matrix4.scale(3, 3, 1));
 
-                    {
-                        view.setUint8(pos++, CMD_TRIANGLE_TEXTURED);
-                        view.setUint32(pos, TEXTURE_OFFSET, true); pos += 4;
-                        view.setUint8(pos++, 64);
+                // Triangle 1
+                vram.setUint8(pos++, CMD_TRIANGLE_TEXTURED);
+                vram.setUint32(pos, CRATE_TEXTURE_OFFSET, true); pos += 4;
+                vram.setUint8(pos++, 64);
 
-                        const vertice0 = new Vector4(-0.5, -0.5, 0).mul(matrix).mul(camera);
-                        const vertice0x = Math.floor((vertice0.x / vertice0.w + 1) * (framebuffer.width / 2));
-                        const vertice0y = Math.floor((-vertice0.y / vertice0.w + 1) * (framebuffer.height / 2));
+                let vertice0 = new Vector4(-0.5, -0.5, 0).mul(matrix).mul(camera);
+                vram.setUint16(pos, (vertice0.x / vertice0.w + 1) * (FRAMEBUFFER_WIDTH >> 1), true); pos += 2;
+                vram.setUint16(pos, (-vertice0.y / vertice0.w + 1) * (FRAMEBUFFER_HEIGHT >> 1), true); pos += 2;
+                vram.setUint16(pos, 0xffff, true); pos += 2;
+                vram.setUint8(pos++, 0);
+                vram.setUint8(pos++, 0);
 
-                        view.setUint16(pos, vertice0x, true); pos += 2;
-                        view.setUint16(pos, vertice0y, true); pos += 2;
-                        view.setUint8(pos++, 0x80);
-                        view.setUint8(pos++, 0x80);
-                        view.setUint8(pos++, 0x80);
-                        view.setUint8(pos++, 0);
-                        view.setUint8(pos++, 0);
+                let vertice1 = new Vector4(0.5, -0.5, 0).mul(matrix).mul(camera);
+                vram.setUint16(pos, (vertice1.x / vertice1.w + 1) * (FRAMEBUFFER_WIDTH >> 1), true); pos += 2;
+                vram.setUint16(pos, (-vertice1.y / vertice1.w + 1) * (FRAMEBUFFER_HEIGHT >> 1), true); pos += 2;
+                vram.setUint16(pos, 0xffff, true); pos += 2;
+                vram.setUint8(pos++, 64);
+                vram.setUint8(pos++, 0);
 
-                        const vertice1 = new Vector4(0.5, -0.5, 0).mul(matrix).mul(camera);
-                        const vertice1x = Math.floor((vertice1.x / vertice1.w + 1) * (framebuffer.width / 2));
-                        const vertice1y = Math.floor((-vertice1.y / vertice1.w + 1) * (framebuffer.height / 2));
+                let vertice2 = new Vector4(0.5, 0.5, 0).mul(matrix).mul(camera);
+                vram.setUint16(pos, (vertice2.x / vertice2.w + 1) * (FRAMEBUFFER_WIDTH >> 1), true); pos += 2;
+                vram.setUint16(pos, (-vertice2.y / vertice2.w + 1) * (FRAMEBUFFER_HEIGHT >> 1), true); pos += 2;
+                vram.setUint16(pos, 0xffff, true); pos += 2;
+                vram.setUint8(pos++, 64);
+                vram.setUint8(pos++, 64);
 
-                        view.setUint16(pos, vertice1x, true); pos += 2;
-                        view.setUint16(pos, vertice1y, true); pos += 2;
-                        view.setUint8(pos++, 0x80);
-                        view.setUint8(pos++, 0x80);
-                        view.setUint8(pos++, 0x80);
-                        view.setUint8(pos++, 64);
-                        view.setUint8(pos++, 0);
+                // Triangle 2
+                vram.setUint8(pos++, CMD_TRIANGLE_TEXTURED);
+                vram.setUint32(pos, CRATE_TEXTURE_OFFSET, true); pos += 4;
+                vram.setUint8(pos++, 64);
 
-                        const vertice2 = new Vector4(0.5, 0.5, 0).mul(matrix).mul(camera);
-                        const vertice2x = Math.floor((vertice2.x / vertice2.w + 1) * (framebuffer.width / 2));
-                        const vertice2y = Math.floor((-vertice2.y / vertice2.w + 1) * (framebuffer.height / 2));
+                vertice0 = new Vector4(-0.5, -0.5, 0).mul(matrix).mul(camera);
+                vram.setUint16(pos, (vertice0.x / vertice0.w + 1) * (FRAMEBUFFER_WIDTH >> 1), true); pos += 2;
+                vram.setUint16(pos, (-vertice0.y / vertice0.w + 1) * (FRAMEBUFFER_HEIGHT >> 1), true); pos += 2;
+                vram.setUint16(pos, 0xffff, true); pos += 2;
+                vram.setUint8(pos++, 0);
+                vram.setUint8(pos++, 0);
 
-                        view.setUint16(pos, vertice2x, true); pos += 2;
-                        view.setUint16(pos, vertice2y, true); pos += 2;
-                        view.setUint8(pos++, 0x80);
-                        view.setUint8(pos++, 0x80);
-                        view.setUint8(pos++, 0x80);
-                        view.setUint8(pos++, 64);
-                        view.setUint8(pos++, 64);
-                    }
+                vertice1 = new Vector4(0.5, 0.5, 0).mul(matrix).mul(camera);
+                vram.setUint16(pos, (vertice1.x / vertice1.w + 1) * (FRAMEBUFFER_WIDTH >> 1), true); pos += 2;
+                vram.setUint16(pos, (-vertice1.y / vertice1.w + 1) * (FRAMEBUFFER_HEIGHT >> 1), true); pos += 2;
+                vram.setUint16(pos, 0xffff, true); pos += 2;
+                vram.setUint8(pos++, 64);
+                vram.setUint8(pos++, 64);
 
-                    {
-                        view.setUint8(pos++, CMD_TRIANGLE_TEXTURED);
-                        view.setUint32(pos, TEXTURE_OFFSET, true); pos += 4;
-                        view.setUint8(pos++, 64);
-
-                        const vertice0 = new Vector4(-0.5, -0.5, 0).mul(matrix).mul(camera);
-                        const vertice0x = Math.floor((vertice0.x / vertice0.w + 1) * (framebuffer.width / 2));
-                        const vertice0y = Math.floor((-vertice0.y / vertice0.w + 1) * (framebuffer.height / 2));
-
-                        view.setUint16(pos, vertice0x, true); pos += 2;
-                        view.setUint16(pos, vertice0y, true); pos += 2;
-                        view.setUint8(pos++, 0xff);
-                        view.setUint8(pos++, 0xff);
-                        view.setUint8(pos++, 0xff);
-                        view.setUint8(pos++, 0);
-                        view.setUint8(pos++, 0);
-
-                        const vertice1 = new Vector4(0.5, 0.5, 0).mul(matrix).mul(camera);
-                        const vertice1x = Math.floor((vertice1.x / vertice1.w + 1) * (framebuffer.width / 2));
-                        const vertice1y = Math.floor((-vertice1.y / vertice1.w + 1) * (framebuffer.height / 2));
-
-                        view.setUint16(pos, vertice1x, true); pos += 2;
-                        view.setUint16(pos, vertice1y, true); pos += 2;
-                        view.setUint8(pos++, 0xff);
-                        view.setUint8(pos++, 0xff);
-                        view.setUint8(pos++, 0xff);
-                        view.setUint8(pos++, 64);
-                        view.setUint8(pos++, 64);
-
-                        const vertice2 = new Vector4(-0.5, 0.5, 0).mul(matrix).mul(camera);
-                        const vertice2x = Math.floor((vertice2.x / vertice2.w + 1) * (framebuffer.width / 2));
-                        const vertice2y = Math.floor((-vertice2.y / vertice2.w + 1) * (framebuffer.height / 2));
-
-                        view.setUint16(pos, vertice2x, true); pos += 2;
-                        view.setUint16(pos, vertice2y, true); pos += 2;
-                        view.setUint8(pos++, 0xff);
-                        view.setUint8(pos++, 0xff);
-                        view.setUint8(pos++, 0xff);
-                        view.setUint8(pos++, 0);
-                        view.setUint8(pos++, 64);
-                    }
-                }
+                vertice2 = new Vector4(-0.5, 0.5, 0).mul(matrix).mul(camera);
+                vram.setUint16(pos, (vertice2.x / vertice2.w + 1) * (FRAMEBUFFER_WIDTH >> 1), true); pos += 2;
+                vram.setUint16(pos, (-vertice2.y / vertice2.w + 1) * (FRAMEBUFFER_HEIGHT >> 1), true); pos += 2;
+                vram.setUint16(pos, 0xffff, true); pos += 2;
+                vram.setUint8(pos++, 0);
+                vram.setUint8(pos++, 64);
             }
 
 
+            // const matrix = Matrix4.translate(0, 0, -5)
+            //     .mul(Matrix4.rotateX(radians(rotation)))
+            //     .mul(Matrix4.rotateY(radians(rotation)))
+            //     .mul(Matrix4.scale(1, 1, 1));
 
-
+            const matrix = Matrix4.translate(police.position.x, police.position.y, police.position.z)
+                .mul(Matrix4.rotateX(radians(180)))
+                .mul(Matrix4.rotateY(police.angle));
 
             function faceDepth(face, vertices, matrix, camera) {
                 const a = new Vector4(vertices[face[0].vertexIndex][0], vertices[face[0].vertexIndex][1], vertices[face[0].vertexIndex][2])
@@ -409,22 +416,8 @@
                     .mul(matrix).mul(camera);
                 const c = new Vector4(vertices[face[2].vertexIndex][0], vertices[face[2].vertexIndex][1], vertices[face[2].vertexIndex][2])
                     .mul(matrix).mul(camera);
-                return (a.w + b.w + c.w) / face.length;
+                return a.z + b.z + c.z;
             }
-
-            // const matrix = Matrix4.translate(0, 0, -5)
-            //     .mul(Matrix4.rotateX(radians(rotation)))
-            //     .mul(Matrix4.rotateY(radians(rotation)))
-            //     .mul(Matrix4.scale(1, 1, 1));
-
-            // const matrix = Matrix4.translate(0, 2, -7)
-            //     .mul(Matrix4.rotateX(radians(180)))
-            //     .mul(Matrix4.rotateY(radians(rotation)))
-            //     .mul(Matrix4.scale(1, 1, 1));
-
-            const matrix = Matrix4.translate(0, 1, -4)
-                .mul(Matrix4.rotateX(radians(180)))
-                .mul(Matrix4.rotateY(radians(-rotation)));
 
             obj.faces.sort((a, b) => {
                 return faceDepth(b, obj.vertices, matrix, camera) -
@@ -432,43 +425,32 @@
             });
 
             for (const face of obj.faces) {
-                view.setUint8(pos++, CMD_TRIANGLE);
+                vram.setUint8(pos++, CMD_TRIANGLE);
 
-                const vertice0 = new Vector4(
-                    obj.vertices[face[0].vertexIndex][0],
-                    obj.vertices[face[0].vertexIndex][1],
-                    obj.vertices[face[0].vertexIndex][2]
-                ).mul(matrix).mul(camera);
-                view.setInt16(pos, (vertice0.x / vertice0.w + 1) * (640 / 2), true); pos += 2;
-                view.setInt16(pos, (vertice0.y / vertice0.w + 1) * (480 / 2), true); pos += 2;
-                view.setUint8(pos++, face[0].currentColor[0] * 0xff);
-                view.setUint8(pos++, face[0].currentColor[1] * 0xff);
-                view.setUint8(pos++, face[0].currentColor[2] * 0xff);
+                const faceColor = Math.floor(face[0].currentColor[0] * 31) |
+                    (Math.floor(face[0].currentColor[1] * 63) << 5) |
+                    (Math.floor(face[0].currentColor[2] * 31) << 11);
 
-                const vertice1 = new Vector4(
-                    obj.vertices[face[1].vertexIndex][0],
-                    obj.vertices[face[1].vertexIndex][1],
-                    obj.vertices[face[1].vertexIndex][2]
-                ).mul(matrix).mul(camera);
-                view.setInt16(pos, (vertice1.x / vertice1.w + 1) * (640 / 2), true); pos += 2;
-                view.setInt16(pos, (vertice1.y / vertice1.w + 1) * (480 / 2), true); pos += 2;
-                view.setUint8(pos++, face[1].currentColor[0] * 0xff);
-                view.setUint8(pos++, face[1].currentColor[1] * 0xff);
-                view.setUint8(pos++, face[1].currentColor[2] * 0xff);
+                const vertice0 = new Vector4(obj.vertices[face[0].vertexIndex][0], obj.vertices[face[0].vertexIndex][1], obj.vertices[face[0].vertexIndex][2])
+                    .mul(matrix).mul(camera);
+                vram.setInt16(pos, (vertice0.x / vertice0.w + 1) * (FRAMEBUFFER_WIDTH >> 1), true); pos += 2;
+                vram.setInt16(pos, (vertice0.y / vertice0.w + 1) * (FRAMEBUFFER_HEIGHT >> 1), true); pos += 2;
+                vram.setUint16(pos, faceColor, true); pos += 2;
 
-                const vertice2 = new Vector4(
-                    obj.vertices[face[2].vertexIndex][0],
-                    obj.vertices[face[2].vertexIndex][1],
-                    obj.vertices[face[2].vertexIndex][2]
-                ).mul(matrix).mul(camera);
-                view.setInt16(pos, (vertice2.x / vertice2.w + 1) * (640 / 2), true); pos += 2;
-                view.setInt16(pos, (vertice2.y / vertice2.w + 1) * (480 / 2), true); pos += 2;
-                view.setUint8(pos++, face[2].currentColor[0] * 0xff);
-                view.setUint8(pos++, face[2].currentColor[1] * 0xff);
-                view.setUint8(pos++, face[2].currentColor[2] * 0xff);
+                const vertice1 = new Vector4(obj.vertices[face[1].vertexIndex][0], obj.vertices[face[1].vertexIndex][1], obj.vertices[face[1].vertexIndex][2])
+                    .mul(matrix).mul(camera);
+                vram.setInt16(pos, (vertice1.x / vertice1.w + 1) * (FRAMEBUFFER_WIDTH >> 1), true); pos += 2;
+                vram.setInt16(pos, (vertice1.y / vertice1.w + 1) * (FRAMEBUFFER_HEIGHT >> 1), true); pos += 2;
+                vram.setUint16(pos, faceColor, true); pos += 2;
+
+                const vertice2 = new Vector4(obj.vertices[face[2].vertexIndex][0], obj.vertices[face[2].vertexIndex][1], obj.vertices[face[2].vertexIndex][2])
+                    .mul(matrix).mul(camera);
+                vram.setInt16(pos, (vertice2.x / vertice2.w + 1) * (FRAMEBUFFER_WIDTH >> 1), true); pos += 2;
+                vram.setInt16(pos, (vertice2.y / vertice2.w + 1) * (FRAMEBUFFER_HEIGHT >> 1), true); pos += 2;
+                vram.setUint16(pos, faceColor, true); pos += 2;
             }
 
-            view.setUint8(pos++, CMD_DONE);
+            vram.setUint8(pos++, CMD_DONE);
         }
 
         function loop() {
@@ -477,14 +459,20 @@
 
             instance.exports.clock(TARO_CMD_OFFSET);
 
-            for (let y = 0; y < 480; y++) {
-                for (let x = 0; x < 640; x++) {
-                    const dest = (y * 640 + x) * 4;
-                    const src = FRAMEBUFFER_OFFSET + (y * 640 + x) * 3;
-                    framebuffer.data[dest] = vram[src];
-                    framebuffer.data[dest + 1] = vram[src + 1];
-                    framebuffer.data[dest + 2] = vram[src + 2];
-                    framebuffer.data[dest + 3] = 0xff;
+            const scaleX = Math.floor(framebuffer.width / FRAMEBUFFER_WIDTH);
+            const scaleY = Math.floor(framebuffer.height / FRAMEBUFFER_HEIGHT);
+            for (let y = 0; y < FRAMEBUFFER_HEIGHT; y++) {
+                for (let x = 0; x < FRAMEBUFFER_WIDTH; x++) {
+                    const color = vram.getUint16(FRAMEBUFFER_OFFSET + (y * FRAMEBUFFER_WIDTH + x) * 2, true);
+                    for (let ry = 0; ry < scaleY; ry++) {
+                        for (let rx = 0; rx < scaleX; rx++) {
+                            const dest = ((y * scaleY + ry) * framebuffer.width + (x * scaleX + rx)) * 4;
+                            framebuffer.data[dest] = (color & 31) << 3;
+                            framebuffer.data[dest + 1] = ((color >> 5) & 63) << 2;
+                            framebuffer.data[dest + 2] = ((color >> 11) & 31) << 3;
+                            framebuffer.data[dest + 3] = 0xff;
+                        }
+                    }
                 }
             }
             ctx.putImageData(framebuffer, 0, 0);
