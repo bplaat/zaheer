@@ -1,2 +1,4 @@
-fpga/*.fs
+*.fs
+*.bin
+*.mem
 .DS_Store

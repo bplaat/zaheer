@@ -4,8 +4,15 @@ DEVICE=GW1NR-LV9QN88PC6/I5
 
 all: top.fs
 
+# Boot firmware
+boot/boot.bin: boot/boot.s
+	nasm -f bin boot/boot.s -o boot/boot.bin
+
+boot.mem: boot/boot.bin
+	hexdump -v -e '1/1 "%02x\n"' boot/boot.bin > boot.mem
+
 # Synthesis
-top.json: top.v
+top.json: top.v uart_tx.v boot.mem
 	yosys -p "read_verilog top.v; synth_gowin -top top -json top.json"
 
 # Place and Route
