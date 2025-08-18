@@ -1,4 +1,6 @@
-*.fs
+*.o
+*.elf
 *.bin
 *.mem
+*.fs
 .DS_Store

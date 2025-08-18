@@ -5,6 +5,7 @@ A work in progress complete computer desktop GUI platform running on cheap FPGA'
 ## Getting Started
 
 - Install [oss-cad-suite](https://github.com/YosysHQ/oss-cad-suite-build) and add to path
+- Install a RISC-V GCC Toolchain
 - Run `cd fpga; make load` and to flash `make flash`
 
 ## License
