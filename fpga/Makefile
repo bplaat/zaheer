@@ -25,7 +25,7 @@ top_pnr.json: top.json
 top.fs: top_pnr.json
 	gowin_pack -d ${FAMILY} -o top.fs top_pnr.json
 
-# Program Board
+# Actions
 .PHONY: load
 load: top.fs
 	openFPGALoader -b ${BOARD} top.fs
@@ -33,3 +33,7 @@ load: top.fs
 .PHONY: flash
 flash: top.fs
 	openFPGALoader -b ${BOARD} top.fs -f
+
+.PHONY: serial
+serial:
+	picocom -b 115200 /dev/tty.usbserial-11101

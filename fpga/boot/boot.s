@@ -1,1 +1,3 @@
-    db "Bastiaan ", 0
+    db "Bastiaan "
+
+    align 1024, db 0
