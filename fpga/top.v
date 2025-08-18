@@ -16,10 +16,9 @@ module top(
     output uart_tx,
 );
 
-assign rst = ~btn1;
+wire rst = ~btn1;
 
 // UART
-// picocom -b 115200 /dev/tty.usbserial-11101
 reg [7:0] uart_data = 8'h00;
 reg uart_start = 0;
 wire uart_busy;
@@ -43,14 +42,20 @@ initial begin
 end
 
 // LED counter
-localparam WAIT_TIME = CLK_FREQ / 100;
+localparam WAIT_TIME = CLK_FREQ / 32;
 
-reg [23:0] clock_counter = 0;
-reg [5:0] led_counter = 0;
-reg [31:0] instruction_pointer = 0;
+reg [23:0] clock_counter;
+reg [5:0] led_counter;
+reg [31:0] instruction_pointer;
+
+assign led = ~led_counter;
 
 always @(posedge clk) begin
-    if (~rst) begin
+    if (rst) begin
+        clock_counter = 0;
+        led_counter = 0;
+        instruction_pointer = 0;
+    end else begin
         clock_counter <= clock_counter + 1;
         if (clock_counter == WAIT_TIME) begin
             clock_counter <= 0;
@@ -69,7 +74,5 @@ always @(posedge clk) begin
         end
     end
 end
-
-assign led = ~led_counter;
 
 endmodule
