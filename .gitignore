@@ -1,4 +1,9 @@
 *.fs
 *.bin
 *.mem
+*.bin
+*.elf
+*.o
+emu
+target/
 .DS_Store

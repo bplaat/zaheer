@@ -1,0 +1,6 @@
+[package]
+name = "zaheer-emulator"
+version = "0.1.0"
+
+[dependencies]
+sdl2 = { pkg-config = "sdl2" }
