@@ -56,8 +56,8 @@ module cpu(
 
     // Registers
     reg [31:0] pc;
-    reg [31:0] regs [0:31];
-    reg [2:0] state;
+    (* syn_ramstyle = "block_ram" *) reg [31:0] regs [0:31];
+    (* fsm_encoding = "one-hot" *) reg [2:0] state;
 
     // Instruction register and decoded fields
     reg [31:0] instr;
@@ -75,8 +75,16 @@ module cpu(
     wire [31:0] imm_u = {instr[31:12], 12'b0};
     wire [31:0] imm_j = {{11{instr[31]}}, instr[31], instr[19:12], instr[20], instr[30:21], 1'b0};
 
-    // Registered operands from REGREAD stage
+    // Registered operands from REGREAD stage.
+    // Synchronous BRAM read: address (rs1/rs2 from instr) is valid during REGREAD,
+    // so the output is available in EXECUTE one cycle later.
+    // regs[0] always reads as 0 because BRAM initialises to 0 and writes to x0 are
+    // blocked by the rd != 5'd0 guard in WRITEBACK.
     reg [31:0] rs1_val, rs2_val;
+    always @(posedge clk) begin
+        rs1_val <= regs[rs1];
+        rs2_val <= regs[rs2];
+    end
 
     // ALU - fully combinational, driven by rs1_val/rs2_val and instruction
     reg [31:0] alu_a, alu_b;
@@ -203,7 +211,6 @@ module cpu(
     end
 
     // Main state machine
-    integer i;
     always @(posedge clk) begin
         if (rst) begin
             pc <= 32'h00000000;
@@ -214,14 +221,11 @@ module cpu(
             mem_addr <= 32'b0;
             mem_wdata <= 32'b0;
             instr <= 32'b0;
-            rs1_val <= 32'b0;
-            rs2_val <= 32'b0;
             write_rd <= 0;
             next_pc <= 32'b0;
             exec_result <= 32'b0;
             eff_addr <= 32'b0;
-            for (i = 0; i < 32; i = i + 1)
-                regs[i] <= 32'b0;
+            // regs initialised by BRAM to zero; no explicit reset loop needed
         end else begin
             case (state)
                 // Drive address bus with PC, request instruction read
@@ -240,10 +244,9 @@ module cpu(
                     state <= STATE_REGREAD;
                 end
 
-                // Read register file (instr is now stable, so rs1/rs2 fields valid)
+                // Register reads are handled by the unconditional always block above.
+                // This state exists only to provide the one-cycle BRAM read latency.
                 STATE_REGREAD: begin
-                    rs1_val <= (rs1 == 5'd0) ? 32'b0 : regs[rs1];
-                    rs2_val <= (rs2 == 5'd0) ? 32'b0 : regs[rs2];
                     state <= STATE_EXECUTE;
                 end
 

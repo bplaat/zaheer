@@ -58,10 +58,10 @@ wire rom_sel = (cpu_mem_addr[31:28] == 4'h0);
 wire [31:0] rom_rdata = rom[cpu_mem_addr[11:2]];
 
 // === RAM (4KB, byte-addressable via write strobes) ===
-reg [7:0] ram0 [0:1023]; // byte 0
-reg [7:0] ram1 [0:1023]; // byte 1
-reg [7:0] ram2 [0:1023]; // byte 2
-reg [7:0] ram3 [0:1023]; // byte 3
+(* syn_ramstyle = "block_ram" *) reg [7:0] ram0 [0:1023]; // byte 0
+(* syn_ramstyle = "block_ram" *) reg [7:0] ram1 [0:1023]; // byte 1
+(* syn_ramstyle = "block_ram" *) reg [7:0] ram2 [0:1023]; // byte 2
+(* syn_ramstyle = "block_ram" *) reg [7:0] ram3 [0:1023]; // byte 3
 
 wire ram_sel = (cpu_mem_addr[31:28] == 4'h2);
 wire [9:0] ram_word_addr = cpu_mem_addr[11:2];
