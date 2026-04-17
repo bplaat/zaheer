@@ -1,4 +1,2 @@
-*.fs
-*.bin
-*.mem
 .DS_Store
+target/

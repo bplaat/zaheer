@@ -2,38 +2,47 @@ BOARD=tangnano9k
 FAMILY=GW1N-9C
 DEVICE=GW1NR-LV9QN88PC6/I5
 
-all: top.fs
+CC=cc
+TARGET=target
+
+all: $(TARGET)/top.fs
+
+$(TARGET):
+	mkdir -p $(TARGET)
+
+# Assembler tool
+$(TARGET)/asm: ../tools/asm.c | $(TARGET)
+	$(CC) -Wall -Wextra -std=c99 -O2 -o $@ $<
 
 # Boot firmware
-boot/boot.bin: boot/boot.s
-	nasm -f bin boot/boot.s -o boot/boot.bin
-
-boot.mem: boot/boot.bin
-	hexdump -v -e '1/1 "%02x\n"' boot/boot.bin > boot.mem
+$(TARGET)/boot.mem: boot/boot.s $(TARGET)/asm | $(TARGET)
+	$(TARGET)/asm $< $@
 
 # Synthesis
-top.json: top.v uart_tx.v boot.mem
-	yosys -p "read_verilog top.v; synth_gowin -top top -json top.json"
+$(TARGET)/top.json: top.v cpu.v uart_tx.v $(TARGET)/boot.mem | $(TARGET)
+	yosys -p "read_verilog top.v; synth_gowin -top top -json $@"
 
 # Place and Route
-.INTERMEDIATE: top.json
-top_pnr.json: top.json
-	nextpnr-himbaechel --json top.json --freq 27 --write top_pnr.json --device ${DEVICE} --vopt family=${FAMILY} --vopt cst=${BOARD}.cst
+$(TARGET)/top_pnr.json: $(TARGET)/top.json | $(TARGET)
+	nextpnr-himbaechel --json $< --freq 27 --write $@ --device $(DEVICE) --vopt family=$(FAMILY) --vopt cst=$(BOARD).cst
 
 # Generate Bitstream
-.INTERMEDIATE: top_pnr.json
-top.fs: top_pnr.json
-	gowin_pack -d ${FAMILY} -o top.fs top_pnr.json
+$(TARGET)/top.fs: $(TARGET)/top_pnr.json | $(TARGET)
+	gowin_pack -d $(FAMILY) -o $@ $<
 
 # Actions
 .PHONY: load
-load: top.fs
-	openFPGALoader -b ${BOARD} top.fs
+load: $(TARGET)/top.fs
+	openFPGALoader -b $(BOARD) $<
 
 .PHONY: flash
-flash: top.fs
-	openFPGALoader -b ${BOARD} top.fs -f
+flash: $(TARGET)/top.fs
+	openFPGALoader -b $(BOARD) $< -f
 
 .PHONY: serial
 serial:
 	picocom -b 115200 /dev/tty.usbserial-11101
+
+.PHONY: clean
+clean:
+	rm -rf $(TARGET)
