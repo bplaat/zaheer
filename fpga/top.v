@@ -7,13 +7,18 @@
 `include "cpu.v"
 `include "uart_tx.v"
 `include "uart_rx.v"
+`include "hdmi.v"
 
 module top(
     input clk,
     output [5:0] led,
     input btn1,
     input uart_rx,
-    output uart_tx
+    output uart_tx,
+    output tmds_clk_p,
+    output tmds_clk_n,
+    output [2:0] tmds_d_p,
+    output [2:0] tmds_d_n
 );
 
 localparam CLK_FREQ = 27000000;
@@ -180,5 +185,14 @@ always @(*) begin
     else
         cpu_mem_rdata = 32'h00000000;
 end
+
+// === HDMI ===
+hdmi hdmi_inst(
+    .clk(clk),
+    .tmds_clk_p(tmds_clk_p),
+    .tmds_clk_n(tmds_clk_n),
+    .tmds_d_p(tmds_d_p),
+    .tmds_d_n(tmds_d_n)
+);
 
 endmodule
