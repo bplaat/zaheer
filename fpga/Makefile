@@ -19,7 +19,7 @@ $(TARGET)/boot.mem: boot/boot.s $(TARGET)/asm | $(TARGET)
 	$(TARGET)/asm $< $@
 
 # Synthesis
-$(TARGET)/top.json: top.v cpu.v uart_tx.v uart_rx.v hdmi.v $(TARGET)/boot.mem | $(TARGET)
+$(TARGET)/top.json: top.v cpu.v uart_tx.v uart_rx.v hdmi.v taro.v $(TARGET)/boot.mem | $(TARGET)
 	yosys -p "read_verilog top.v; synth_gowin -top top -json $@"
 
 # Place and Route

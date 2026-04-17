@@ -8,6 +8,7 @@
 `include "uart_tx.v"
 `include "uart_rx.v"
 `include "hdmi.v"
+`include "taro.v"
 
 module top(
     input clk,
@@ -186,9 +187,40 @@ always @(*) begin
         cpu_mem_rdata = 32'h00000000;
 end
 
-// === HDMI ===
+// === HDMI + Taro tile renderer ===
+wire        hdmi_clk_px;
+wire [9:0]  hdmi_hcnt, hdmi_vcnt;
+wire        hdmi_de;
+wire [7:0]  taro_r, taro_g, taro_b;
+
+wire tilemap_sel = (cpu_mem_addr[31:28] == 4'h3);
+wire font_sel    = (cpu_mem_addr[31:28] == 4'h5);
+
+taro taro_inst(
+    .clk(clk),
+    .tilemap_sel(tilemap_sel),
+    .font_sel(font_sel),
+    .cpu_addr(cpu_mem_addr),
+    .cpu_wdata(cpu_mem_wdata),
+    .cpu_we(cpu_mem_we),
+    .cpu_wstrb(cpu_mem_wstrb),
+    .clk_px(hdmi_clk_px),
+    .hcnt(hdmi_hcnt),
+    .vcnt(hdmi_vcnt),
+    .r(taro_r),
+    .g(taro_g),
+    .b(taro_b)
+);
+
 hdmi hdmi_inst(
     .clk(clk),
+    .r(taro_r),
+    .g(taro_g),
+    .b(taro_b),
+    .clk_px(hdmi_clk_px),
+    .hcnt(hdmi_hcnt),
+    .vcnt(hdmi_vcnt),
+    .de(hdmi_de),
     .tmds_clk_p(tmds_clk_p),
     .tmds_clk_n(tmds_clk_n),
     .tmds_d_p(tmds_d_p),

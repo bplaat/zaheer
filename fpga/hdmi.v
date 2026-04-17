@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  *
- * 640x480@60Hz DVI/HDMI output with 8-color horizontal test bars.
+ * 640x480@60Hz DVI/HDMI output. Accepts r/g/b pixel data from external source.
  *
  * Clock plan (input 27 MHz):
  *   rPLL  : 27 * 14 / 3 = 126 MHz  (5x pixel clock, clk_5x)
@@ -18,9 +18,16 @@
  */
 
 module hdmi(
-    input  wire clk,
-    output wire tmds_clk_p,
-    output wire tmds_clk_n,
+    input  wire       clk,
+    input  wire [7:0] r,
+    input  wire [7:0] g,
+    input  wire [7:0] b,
+    output wire       clk_px,
+    output wire [9:0] hcnt,
+    output wire [9:0] vcnt,
+    output wire       de,
+    output wire       tmds_clk_p,
+    output wire       tmds_clk_n,
     output wire [2:0] tmds_d_p,
     output wire [2:0] tmds_d_n
 );
@@ -60,7 +67,6 @@ rPLL #(
 );
 
 // === CLKDIV: 126 MHz / 5 = 25.2 MHz (pixel clock) ===
-wire clk_px;
 
 CLKDIV #(
     .DIV_MODE("5"),
@@ -78,39 +84,35 @@ localparam V_ACTIVE = 480, V_FP = 10, V_SYNC = 2,  V_BP = 33;
 localparam H_TOTAL  = H_ACTIVE + H_FP + H_SYNC + H_BP;  // 800
 localparam V_TOTAL  = V_ACTIVE + V_FP + V_SYNC + V_BP;  // 525
 
-reg [9:0] hcnt = 0;
-reg [9:0] vcnt = 0;
+reg [9:0] hcnt_r = 0;
+reg [9:0] vcnt_r = 0;
+assign hcnt = hcnt_r;
+assign vcnt = vcnt_r;
 
 always @(posedge clk_px) begin
-    if (hcnt == H_TOTAL - 1) begin
-        hcnt <= 0;
-        if (vcnt == V_TOTAL - 1)
-            vcnt <= 0;
+    if (hcnt_r == H_TOTAL - 1) begin
+        hcnt_r <= 0;
+        if (vcnt_r == V_TOTAL - 1)
+            vcnt_r <= 0;
         else
-            vcnt <= vcnt + 1;
+            vcnt_r <= vcnt_r + 1;
     end else begin
-        hcnt <= hcnt + 1;
+        hcnt_r <= hcnt_r + 1;
     end
 end
 
-wire hsync = ~(hcnt >= H_ACTIVE + H_FP && hcnt < H_ACTIVE + H_FP + H_SYNC);
-wire vsync = ~(vcnt >= V_ACTIVE + V_FP && vcnt < V_ACTIVE + V_FP + V_SYNC);
-wire de    = (hcnt < H_ACTIVE) && (vcnt < V_ACTIVE);
+wire hsync = ~(hcnt_r >= H_ACTIVE + H_FP && hcnt_r < H_ACTIVE + H_FP + H_SYNC);
+wire vsync = ~(vcnt_r >= V_ACTIVE + V_FP && vcnt_r < V_ACTIVE + V_FP + V_SYNC);
+assign de  = (hcnt_r < H_ACTIVE) && (vcnt_r < V_ACTIVE);
 
-// === 8-color horizontal test bars (based on vertical position) ===
-// Bar index 0-7 top to bottom: white, yellow, cyan, green, magenta, red, blue, black
-reg [7:0] px_r, px_g, px_b;
-always @(*) begin
-    case (vcnt[9:6])
-        4'd0: begin px_r = 8'hFF; px_g = 8'hFF; px_b = 8'hFF; end // white
-        4'd1: begin px_r = 8'hFF; px_g = 8'hFF; px_b = 8'h00; end // yellow
-        4'd2: begin px_r = 8'h00; px_g = 8'hFF; px_b = 8'hFF; end // cyan
-        4'd3: begin px_r = 8'h00; px_g = 8'hFF; px_b = 8'h00; end // green
-        4'd4: begin px_r = 8'hFF; px_g = 8'h00; px_b = 8'hFF; end // magenta
-        4'd5: begin px_r = 8'hFF; px_g = 8'h00; px_b = 8'h00; end // red
-        4'd6: begin px_r = 8'h00; px_g = 8'h00; px_b = 8'hFF; end // blue
-        default: begin px_r = 8'h00; px_g = 8'h00; px_b = 8'h00; end // black
-    endcase
+// Delay de/hsync/vsync by 3 cycles to match taro render pipeline latency
+reg [2:0] de_d;
+reg [2:0] hsync_d;
+reg [2:0] vsync_d;
+always @(posedge clk_px) begin
+    de_d    <= {de_d[1:0], de};
+    hsync_d <= {hsync_d[1:0], hsync};
+    vsync_d <= {vsync_d[1:0], vsync};
 end
 
 // === TMDS encoders (one per channel) ===
@@ -118,18 +120,18 @@ wire [9:0] tmds_r, tmds_g, tmds_b;
 
 tmds_encoder enc_r(
     .clk(clk_px), .resetn(pll_lock),
-    .de(de), .ctrl(2'b00),
-    .din(px_r), .dout(tmds_r)
+    .de(de_d[2]), .ctrl(2'b00),
+    .din(r), .dout(tmds_r)
 );
 tmds_encoder enc_g(
     .clk(clk_px), .resetn(pll_lock),
-    .de(de), .ctrl(2'b00),
-    .din(px_g), .dout(tmds_g)
+    .de(de_d[2]), .ctrl(2'b00),
+    .din(g), .dout(tmds_g)
 );
 tmds_encoder enc_b(
     .clk(clk_px), .resetn(pll_lock),
-    .de(de), .ctrl({vsync, hsync}),
-    .din(px_b), .dout(tmds_b)
+    .de(de_d[2]), .ctrl({vsync_d[2], hsync_d[2]}),
+    .din(b), .dout(tmds_b)
 );
 
 // === OSER10 serializers: 10:1 at clk_5x ===
