@@ -9,6 +9,6 @@ A work in progress complete computer desktop GUI platform running on cheap FPGA'
 
 ## License
 
-Copyright © 2020-2025 [Bastiaan van der Plaat](https://github.com/bplaat)
+Copyright © 2020-2026 [Bastiaan van der Plaat](https://github.com/bplaat)
 
 Licensed under the [MIT](LICENSE) license.
