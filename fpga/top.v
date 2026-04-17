@@ -6,6 +6,7 @@
 
 `include "cpu.v"
 `include "uart_tx.v"
+`include "uart_rx.v"
 
 module top(
     input clk,
@@ -77,9 +78,9 @@ always @(posedge clk) begin
 end
 
 // === UART TX ===
-reg [7:0] uart_data;
-reg uart_start;
-wire uart_busy;
+reg [7:0] uart_tx_data;
+reg uart_tx_start;
+wire uart_tx_busy;
 
 uart_tx #(
     .CLK_FREQ(CLK_FREQ),
@@ -87,24 +88,66 @@ uart_tx #(
 ) uart_tx_inst (
     .clk(clk),
     .rst(rst),
-    .data(uart_data),
-    .start(uart_start),
-    .busy(uart_busy),
+    .data(uart_tx_data),
+    .start(uart_tx_start),
+    .busy(uart_tx_busy),
     .tx(uart_tx)
 );
 
+// === UART RX ===
+wire uart_rx_data_ready;
+wire [7:0] uart_rx_data_wire;
+
+uart_rx #(
+    .CLK_FREQ(CLK_FREQ),
+    .BAUD_RATE(115200)
+) uart_rx_inst (
+    .clk(clk),
+    .rst(rst),
+    .rx(uart_rx),
+    .data_ready(uart_rx_data_ready),
+    .data(uart_rx_data_wire)
+);
+
+reg [7:0] uart_rx_buf;
+reg uart_rx_ready;
+
 wire uart_sel = (cpu_mem_addr[31:28] == 4'h4);
-wire [31:0] uart_rdata = (cpu_mem_addr[3:2] == 2'b01) ? {31'b0, uart_busy} : 32'b0;
+
+// UART register read mux:
+//   0x40000000 - TX data (write-only, reads zero)
+//   0x40000004 - TX status: bit 0 = busy
+//   0x40000008 - RX status: bit 0 = data ready
+//   0x4000000C - RX data:   byte received (read clears ready flag)
+wire [31:0] uart_rdata =
+    (cpu_mem_addr[3:2] == 2'b01) ? {31'b0, uart_tx_busy}  :
+    (cpu_mem_addr[3:2] == 2'b10) ? {31'b0, uart_rx_ready} :
+    (cpu_mem_addr[3:2] == 2'b11) ? {24'b0, uart_rx_buf}   :
+    32'b0;
 
 always @(posedge clk) begin
     if (rst) begin
-        uart_start <= 0;
-        uart_data <= 8'h00;
+        uart_tx_start <= 0;
+        uart_tx_data  <= 8'h00;
     end else begin
-        uart_start <= 0;
+        uart_tx_start <= 0;
         if (uart_sel && cpu_mem_we && cpu_mem_addr[3:2] == 2'b00) begin
-            uart_data <= cpu_mem_wdata[7:0];
-            uart_start <= 1;
+            uart_tx_data  <= cpu_mem_wdata[7:0];
+            uart_tx_start <= 1;
+        end
+    end
+end
+
+always @(posedge clk) begin
+    if (rst) begin
+        uart_rx_buf   <= 8'h00;
+        uart_rx_ready <= 0;
+    end else begin
+        if (uart_rx_data_ready) begin
+            uart_rx_buf   <= uart_rx_data_wire;
+            uart_rx_ready <= 1;
+        end else if (uart_sel && cpu_mem_re && cpu_mem_addr[3:2] == 2'b11) begin
+            uart_rx_ready <= 0;
         end
     end
 end
