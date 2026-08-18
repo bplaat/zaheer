@@ -7,7 +7,7 @@
 `include "cpu.v"
 `include "uart_tx.v"
 `include "uart_rx.v"
-`include "hdmi.v"
+`include "taro/taro.v"
 
 module top(
     input clk,
@@ -172,6 +172,14 @@ always @(posedge clk) begin
     end
 end
 
+// === Taro Text Video Device ===
+localparam VIDEO_BASE = 32'h80000000;
+localparam VIDEO_SIZE = 32'h00002580;
+wire video_sel = (cpu_mem_addr >= VIDEO_BASE) &&
+                 (cpu_mem_addr < VIDEO_BASE + VIDEO_SIZE);
+wire [11:0] video_word_addr = video_sel ? cpu_mem_addr[13:2] : 12'b0;
+wire [31:0] video_rdata;
+
 // === Address Decoder (read mux) ===
 always @(*) begin
     if (rom_sel)
@@ -182,13 +190,20 @@ always @(*) begin
         cpu_mem_rdata = uart_rdata;
     else if (led_sel)
         cpu_mem_rdata = led_rdata;
+    else if (video_sel)
+        cpu_mem_rdata = video_rdata;
     else
         cpu_mem_rdata = 32'h00000000;
 end
 
-// === HDMI ===
-hdmi hdmi_inst(
+// === Taro ===
+taro taro_inst(
     .clk(clk),
+    .video_we(video_sel && cpu_mem_we),
+    .video_addr(video_word_addr),
+    .video_wdata(cpu_mem_wdata),
+    .video_wstrb(cpu_mem_wstrb),
+    .video_rdata(video_rdata),
     .tmds_clk_p(tmds_clk_p),
     .tmds_clk_n(tmds_clk_n),
     .tmds_d_p(tmds_d_p),

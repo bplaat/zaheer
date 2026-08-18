@@ -21,13 +21,14 @@ module cpu(
     output reg [3:0] mem_wstrb
 );
 
-    // CPU states (6 states, most instructions 5 cycles, loads/stores 6)
+    // CPU states (7 states, most instructions 5 cycles, stores 6, loads 7)
     localparam STATE_FETCH     = 3'd0, // Drive bus with PC
                STATE_DECODE    = 3'd1, // Capture instruction from bus
                STATE_REGREAD   = 3'd2, // Read register file
                STATE_EXECUTE   = 3'd3, // ALU / branch / address calc
-               STATE_MEMORY    = 3'd4, // Load/store bus response
-               STATE_WRITEBACK = 3'd5; // Write register file, update PC
+               STATE_MEMORY    = 3'd4, // Complete store or wait for load data
+               STATE_WRITEBACK = 3'd5, // Write register file, update PC
+               STATE_MEM_READ  = 3'd6; // Capture synchronous memory read
 
     // Opcodes
     localparam OP_LUI    = 7'b0110111,
@@ -339,17 +340,23 @@ module cpu(
                     endcase
                 end
 
-                // Memory response: data available 1 cycle after request
+                // Complete stores after one bus cycle. Loads wait an additional
+                // cycle so synchronous block RAM can register its read output.
                 STATE_MEMORY: begin
                     mem_re <= 0;
                     mem_we <= 0;
                     mem_wstrb <= 4'b0000;
 
                     if (opcode == OP_LOAD) begin
-                        exec_result <= load_result;
-                        write_rd <= 1;
+                        state <= STATE_MEM_READ;
+                    end else begin
+                        state <= STATE_WRITEBACK;
                     end
+                end
 
+                STATE_MEM_READ: begin
+                    exec_result <= load_result;
+                    write_rd <= 1;
                     state <= STATE_WRITEBACK;
                 end
 

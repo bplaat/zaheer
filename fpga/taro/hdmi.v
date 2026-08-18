@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  *
- * 640x480@60Hz DVI/HDMI output with a display-alignment test pattern.
+ * 640x480@60Hz DVI/HDMI output for the Taro text-mode device.
  *
  * Clock plan (input 27 MHz):
  *   rPLL  : 27 * 14 / 3 = 126 MHz  (5x pixel clock, clk_5x)
@@ -19,6 +19,11 @@
 
 module hdmi(
     input  wire clk,
+    input  wire video_we,
+    input  wire [11:0] video_addr,
+    input  wire [31:0] video_wdata,
+    input  wire [3:0] video_wstrb,
+    output wire [31:0] video_rdata,
     output wire tmds_clk_p,
     output wire tmds_clk_n,
     output wire [2:0] tmds_d_p,
@@ -107,46 +112,35 @@ always @(posedge clk_px) begin
     end
 end
 
-wire hsync = ~(hcnt >= H_ACTIVE + H_FP && hcnt < H_ACTIVE + H_FP + H_SYNC);
-wire vsync = ~(vcnt >= V_ACTIVE + V_FP && vcnt < V_ACTIVE + V_FP + V_SYNC);
-wire de    = (hcnt < H_ACTIVE) && (vcnt < V_ACTIVE);
+wire timing_hsync = ~(hcnt >= H_ACTIVE + H_FP && hcnt < H_ACTIVE + H_FP + H_SYNC);
+wire timing_vsync = ~(vcnt >= V_ACTIVE + V_FP && vcnt < V_ACTIVE + V_FP + V_SYNC);
+wire timing_de = (hcnt < H_ACTIVE) && (vcnt < V_ACTIVE);
 
-// === Display-alignment test pattern ===
-// Eight equal color fields cover the full active area. The white outer border,
-// black inset border, and cyan center crosshair make edge clipping easy to see.
-reg [7:0] px_r, px_g, px_b;
-always @(*) begin
-    if (hcnt < 80) begin
-        px_r = 8'hFF; px_g = 8'hFF; px_b = 8'hFF;
-    end else if (hcnt < 160) begin
-        px_r = 8'hFF; px_g = 8'hFF; px_b = 8'h00;
-    end else if (hcnt < 240) begin
-        px_r = 8'h00; px_g = 8'hFF; px_b = 8'hFF;
-    end else if (hcnt < 320) begin
-        px_r = 8'h00; px_g = 8'hFF; px_b = 8'h00;
-    end else if (hcnt < 400) begin
-        px_r = 8'hFF; px_g = 8'h00; px_b = 8'hFF;
-    end else if (hcnt < 480) begin
-        px_r = 8'hFF; px_g = 8'h00; px_b = 8'h00;
-    end else if (hcnt < 560) begin
-        px_r = 8'h00; px_g = 8'h00; px_b = 8'hFF;
-    end else begin
-        px_r = 8'h00; px_g = 8'h00; px_b = 8'h00;
-    end
+// === 80x60 text mode ===
+wire [7:0] px_r, px_g, px_b;
+wire hsync, vsync, de;
 
-    if ((hcnt == 8) || (hcnt == H_ACTIVE - 9) ||
-        (vcnt == 8) || (vcnt == V_ACTIVE - 9)) begin
-        px_r = 8'h00; px_g = 8'h00; px_b = 8'h00;
-    end
-    if ((hcnt == H_ACTIVE / 2 - 1) || (hcnt == H_ACTIVE / 2) ||
-        (vcnt == V_ACTIVE / 2 - 1) || (vcnt == V_ACTIVE / 2)) begin
-        px_r = 8'h00; px_g = 8'hFF; px_b = 8'hFF;
-    end
-    if ((hcnt == 0) || (hcnt == H_ACTIVE - 1) ||
-        (vcnt == 0) || (vcnt == V_ACTIVE - 1)) begin
-        px_r = 8'hFF; px_g = 8'hFF; px_b = 8'hFF;
-    end
-end
+text_mode text_mode_inst(
+    .cpu_clk(clk),
+    .cpu_we(video_we),
+    .cpu_addr(video_addr),
+    .cpu_wdata(video_wdata),
+    .cpu_wstrb(video_wstrb),
+    .cpu_rdata(video_rdata),
+    .px_clk(clk_px),
+    .px_reset(px_reset),
+    .hcnt(hcnt),
+    .vcnt(vcnt),
+    .de(timing_de),
+    .hsync(timing_hsync),
+    .vsync(timing_vsync),
+    .px_r(px_r),
+    .px_g(px_g),
+    .px_b(px_b),
+    .de_out(de),
+    .hsync_out(hsync),
+    .vsync_out(vsync)
+);
 
 // === TMDS encoders (one per channel) ===
 wire [9:0] tmds_r, tmds_g, tmds_b;
