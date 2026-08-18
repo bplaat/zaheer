@@ -37,11 +37,13 @@ localparam TEXT_WORDS = 2400;
 (* syn_ramstyle = "block_ram" *) reg [15:0] text_even [0:TEXT_WORDS - 1];
 (* syn_ramstyle = "block_ram" *) reg [15:0] text_odd  [0:TEXT_WORDS - 1];
 
-wire [11:0] safe_cpu_addr = (cpu_addr < TEXT_WORDS) ? cpu_addr : 12'b0;
+wire cpu_addr_valid = cpu_addr < TEXT_WORDS;
+wire [11:0] safe_cpu_addr = cpu_addr_valid ? cpu_addr : 12'b0;
 
 always @(posedge cpu_clk) begin
-    cpu_rdata <= {text_odd[safe_cpu_addr], text_even[safe_cpu_addr]};
-    if (cpu_we) begin
+    cpu_rdata <= cpu_addr_valid ?
+        {text_odd[safe_cpu_addr], text_even[safe_cpu_addr]} : 32'b0;
+    if (cpu_we && cpu_addr_valid) begin
         if (cpu_wstrb[0]) text_even[safe_cpu_addr][7:0]  <= cpu_wdata[7:0];
         if (cpu_wstrb[1]) text_even[safe_cpu_addr][15:8] <= cpu_wdata[15:8];
         if (cpu_wstrb[2]) text_odd[safe_cpu_addr][7:0]   <= cpu_wdata[23:16];

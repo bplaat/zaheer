@@ -94,27 +94,24 @@ localparam V_ACTIVE = 480, V_FP = 10, V_SYNC = 2,  V_BP = 33;
 localparam H_TOTAL  = H_ACTIVE + H_FP + H_SYNC + H_BP;  // 800
 localparam V_TOTAL  = V_ACTIVE + V_FP + V_SYNC + V_BP;  // 525
 
-reg [9:0] hcnt;
-reg [9:0] vcnt;
+wire [9:0] hcnt;
+wire [9:0] vcnt;
+wire timing_hsync;
+wire timing_vsync;
+wire timing_de;
 
-always @(posedge clk_px) begin
-    if (px_reset) begin
-        hcnt <= 0;
-        vcnt <= 0;
-    end else if (hcnt == H_TOTAL - 1) begin
-        hcnt <= 0;
-        if (vcnt == V_TOTAL - 1)
-            vcnt <= 0;
-        else
-            vcnt <= vcnt + 1;
-    end else begin
-        hcnt <= hcnt + 1;
-    end
-end
-
-wire timing_hsync = ~(hcnt >= H_ACTIVE + H_FP && hcnt < H_ACTIVE + H_FP + H_SYNC);
-wire timing_vsync = ~(vcnt >= V_ACTIVE + V_FP && vcnt < V_ACTIVE + V_FP + V_SYNC);
-wire timing_de = (hcnt < H_ACTIVE) && (vcnt < V_ACTIVE);
+video_timing #(
+    .H_ACTIVE(H_ACTIVE), .H_FP(H_FP), .H_SYNC(H_SYNC), .H_BP(H_BP),
+    .V_ACTIVE(V_ACTIVE), .V_FP(V_FP), .V_SYNC(V_SYNC), .V_BP(V_BP)
+) timing_inst (
+    .clk(clk_px),
+    .reset(px_reset),
+    .hcnt(hcnt),
+    .vcnt(vcnt),
+    .de(timing_de),
+    .hsync(timing_hsync),
+    .vsync(timing_vsync)
+);
 
 // === 80x60 text mode ===
 wire [7:0] px_r, px_g, px_b;
@@ -201,6 +198,49 @@ ELVDS_OBUF buf_d1(.I(ser_g),   .O(tmds_d_p[1]), .OB(tmds_d_n[1]));
 ELVDS_OBUF buf_d2(.I(ser_r),   .O(tmds_d_p[2]), .OB(tmds_d_n[2]));
 ELVDS_OBUF buf_clk(.I(ser_clk),.O(tmds_clk_p),  .OB(tmds_clk_n));
 
+endmodule
+
+module video_timing #(
+    parameter integer H_ACTIVE = 640,
+    parameter integer H_FP = 16,
+    parameter integer H_SYNC = 96,
+    parameter integer H_BP = 48,
+    parameter integer V_ACTIVE = 480,
+    parameter integer V_FP = 10,
+    parameter integer V_SYNC = 2,
+    parameter integer V_BP = 33
+) (
+    input wire clk,
+    input wire reset,
+    output reg [9:0] hcnt,
+    output reg [9:0] vcnt,
+    output wire de,
+    output wire hsync,
+    output wire vsync
+);
+    localparam integer H_TOTAL = H_ACTIVE + H_FP + H_SYNC + H_BP;
+    localparam integer V_TOTAL = V_ACTIVE + V_FP + V_SYNC + V_BP;
+
+    always @(posedge clk) begin
+        if (reset) begin
+            hcnt <= 0;
+            vcnt <= 0;
+        end else if (hcnt == H_TOTAL - 1) begin
+            hcnt <= 0;
+            if (vcnt == V_TOTAL - 1)
+                vcnt <= 0;
+            else
+                vcnt <= vcnt + 1'b1;
+        end else begin
+            hcnt <= hcnt + 1'b1;
+        end
+    end
+
+    assign de = hcnt < H_ACTIVE && vcnt < V_ACTIVE;
+    assign hsync = !(hcnt >= H_ACTIVE + H_FP &&
+                     hcnt < H_ACTIVE + H_FP + H_SYNC);
+    assign vsync = !(vcnt >= V_ACTIVE + V_FP &&
+                     vcnt < V_ACTIVE + V_FP + V_SYNC);
 endmodule
 
 // =============================================================================

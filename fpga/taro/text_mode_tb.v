@@ -150,6 +150,17 @@ module text_mode_tb;
             pixel_expect(16, 0, palette(color_index[3:0]));
         end
 
+        // Exercise every background palette entry with the blank glyph.
+        for (color_index = 0; color_index < 16; color_index = color_index + 1) begin
+            cpu_write(1, {16'b0, color_index[3:0], 4'h0, 8'h20}, 4'b0011);
+            pixel_expect(16, 0, palette(color_index[3:0]));
+        end
+
+        // Out-of-range accesses read zero and cannot alias valid word zero.
+        cpu_write(2400, 32'hDEADBEEF, 4'b1111);
+        cpu_expect(2400, 32'h00000000);
+        cpu_expect(0, 32'h4CDB1F41);
+
         // Last framebuffer cell: word 2399, odd half, pixel (639,479).
         cpu_write(2399, 32'h0CDB0000, 4'b1111);
         cpu_expect(2399, 32'h0CDB0000);

@@ -50,6 +50,12 @@ $(TARGET)/asm_test.mem: $(ASM_TEST_SOURCES) $(TARGET)/asm | $(TARGET)
 $(TARGET)/text_mode_tb: $(FPGA)/taro/text_mode_tb.v $(FPGA)/taro/text_mode.v $(TARGET)/taro_font.mem | $(TARGET)
 	iverilog -g2012 $(VERILOG_FLAGS) -s text_mode_tb -o $@ $(FPGA)/taro/text_mode_tb.v $(FPGA)/taro/text_mode.v
 
+$(TARGET)/video_timing_tb: $(FPGA)/taro/video_timing_tb.v $(FPGA)/taro/hdmi.v | $(TARGET)
+	iverilog -g2012 $(VERILOG_FLAGS) -s video_timing_tb -o $@ $^
+
+$(TARGET)/tmds_encoder_tb: $(FPGA)/taro/tmds_encoder_tb.v $(FPGA)/taro/hdmi.v | $(TARGET)
+	iverilog -g2012 $(VERILOG_FLAGS) -s tmds_encoder_tb -o $@ $^
+
 $(TARGET)/uart_tx_tb: $(FPGA)/uart/uart_tx_tb.v $(FPGA)/uart/uart_tx.v | $(TARGET)
 	iverilog -g2012 $(VERILOG_FLAGS) -s uart_tx_tb -o $@ $^
 
@@ -60,10 +66,12 @@ $(TARGET)/uart_tb: $(FPGA)/uart/uart_tb.v $(FPGA)/uart/uart.v $(FPGA)/uart/uart_
 	iverilog -g2012 $(VERILOG_FLAGS) -s uart_tb -o $@ $^
 
 .PHONY: test
-test: $(TARGET)/asm_test.mem $(TARGET)/text_mode_tb $(TARGET)/uart_tx_tb $(TARGET)/uart_rx_tb $(TARGET)/uart_tb
+test: $(TARGET)/asm_test.mem $(TARGET)/text_mode_tb $(TARGET)/video_timing_tb $(TARGET)/tmds_encoder_tb $(TARGET)/uart_tx_tb $(TARGET)/uart_rx_tb $(TARGET)/uart_tb
 	test "$$(sed -n '1p' $(TARGET)/asm_test.mem)" = 02a00513
 	test "$$(sed -n '2p' $(TARGET)/asm_test.mem)" = 00700593
 	vvp $(TARGET)/text_mode_tb
+	vvp $(TARGET)/video_timing_tb
+	vvp $(TARGET)/tmds_encoder_tb
 	vvp $(TARGET)/uart_tx_tb
 	vvp $(TARGET)/uart_rx_tb
 	vvp $(TARGET)/uart_tb
