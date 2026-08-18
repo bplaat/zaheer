@@ -27,7 +27,7 @@ $(TARGET)/taro_font.mem: taro/font.pf | $(TARGET)
 	xxd -p -c 1 $< > $@
 
 # Synthesis
-$(TARGET)/top.json: top.v cpu.v uart_tx.v uart_rx.v taro/taro.v taro/text_mode.v taro/hdmi.v $(TARGET)/boot.mem $(TARGET)/taro_font.mem | $(TARGET)
+$(TARGET)/top.json: top.v cpu.v uart_tx.v uart_rx.v sdcard.v taro/taro.v taro/text_mode.v taro/hdmi.v $(TARGET)/boot.mem $(TARGET)/taro_font.mem | $(TARGET)
 	yosys -p "read_verilog top.v; synth_gowin -no-rw-check -top top -json $@"
 
 # Place and Route
@@ -42,9 +42,17 @@ $(TARGET)/top.fs: $(TARGET)/top_pnr.json | $(TARGET)
 $(TARGET)/text_mode_tb: taro/text_mode_tb.v taro/text_mode.v $(TARGET)/taro_font.mem | $(TARGET)
 	iverilog -g2012 -s text_mode_tb -o $@ taro/text_mode_tb.v taro/text_mode.v
 
+$(TARGET)/sdcard_tb: sdcard_tb.v sdcard.v | $(TARGET)
+	iverilog -g2012 -s sdcard_tb -o $@ sdcard_tb.v sdcard.v
+
+$(TARGET)/boot_tb: boot/boot_tb.v cpu.v $(TARGET)/boot.mem | $(TARGET)
+	iverilog -g2012 -s boot_tb -o $@ boot/boot_tb.v cpu.v
+
 .PHONY: test
-test: $(TARGET)/text_mode_tb
+test: $(TARGET)/text_mode_tb $(TARGET)/sdcard_tb $(TARGET)/boot_tb
 	vvp $(TARGET)/text_mode_tb
+	vvp $(TARGET)/sdcard_tb
+	vvp $(TARGET)/boot_tb
 
 # Actions
 .PHONY: load

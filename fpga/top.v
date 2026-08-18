@@ -7,6 +7,7 @@
 `include "cpu.v"
 `include "uart_tx.v"
 `include "uart_rx.v"
+`include "sdcard.v"
 `include "taro/taro.v"
 
 module top(
@@ -15,6 +16,10 @@ module top(
     input btn1,
     input uart_rx,
     output uart_tx,
+    output sd_clk,
+    output sd_mosi,
+    input sd_miso,
+    output sd_cs,
     output tmds_clk_p,
     output tmds_clk_n,
     output [2:0] tmds_d_p,
@@ -53,14 +58,31 @@ cpu cpu_inst(
     .mem_wstrb(cpu_mem_wstrb)
 );
 
-// === ROM (4KB, word-addressed, read-only) ===
-reg [31:0] rom [0:1023];
+// === SD Card ===
+wire sdcard_sel = (cpu_mem_addr[31:28] == 4'hA);
+wire [31:0] sdcard_rdata;
+
+sdcard sdcard_inst(
+    .clk(clk),
+    .rst(rst),
+    .we(sdcard_sel && cpu_mem_we),
+    .addr(cpu_mem_addr[3:2]),
+    .wdata(cpu_mem_wdata),
+    .rdata(sdcard_rdata),
+    .sd_clk(sd_clk),
+    .sd_mosi(sd_mosi),
+    .sd_miso(sd_miso),
+    .sd_cs(sd_cs)
+);
+
+// === ROM (16KB, word-addressed, read-only) ===
+reg [31:0] rom [0:4095];
 initial begin
     $readmemh("target/boot.mem", rom);
 end
 
 wire rom_sel = (cpu_mem_addr[31:28] == 4'h0);
-wire [31:0] rom_rdata = rom[cpu_mem_addr[11:2]];
+wire [31:0] rom_rdata = rom[cpu_mem_addr[13:2]];
 
 // === RAM (4KB, byte-addressable via write strobes) ===
 (* syn_ramstyle = "block_ram" *) reg [7:0] ram0 [0:1023]; // byte 0
@@ -190,6 +212,8 @@ always @(*) begin
         cpu_mem_rdata = uart_rdata;
     else if (led_sel)
         cpu_mem_rdata = led_rdata;
+    else if (sdcard_sel)
+        cpu_mem_rdata = sdcard_rdata;
     else if (video_sel)
         cpu_mem_rdata = video_rdata;
     else

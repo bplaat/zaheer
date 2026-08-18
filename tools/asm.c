@@ -930,8 +930,8 @@ int main(int argc, char* argv[]) {
     }
 
     int word_count = output_pos / 4;
-    // Pad to at least 1024 words (4KB ROM)
-    int min_words = 1024;
+    // Pad to the Zaheer boot ROM size (4096 words / 16KB).
+    int min_words = 4096;
     for (int i = 0; i < word_count || i < min_words; i++) {
         if (i < word_count) {
             uint32_t w =
