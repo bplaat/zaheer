@@ -1,0 +1,1 @@
+.equ TEST_VALUE, 42

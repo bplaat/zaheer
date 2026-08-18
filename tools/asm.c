@@ -6,7 +6,7 @@
 
 // Basic RV32I assembler - outputs 32-bit hex words (one per line)
 // Supports: all RV32I instructions, common pseudo-instructions,
-// %hi/%lo relocations, labels, and basic directives.
+// %hi/%lo relocations, labels, GAS-style includes, and basic directives.
 
 #include <ctype.h>
 #include <stdint.h>
@@ -19,6 +19,8 @@
 #define MAX_EQUS 256
 #define MAX_LINE_LEN 512
 #define MAX_OUTPUT 16384
+#define MAX_PATH_LEN 1024
+#define MAX_INCLUDE_DEPTH 32
 
 // Output buffer (byte-level, emitted as 32-bit words at the end)
 static uint8_t output[MAX_OUTPUT];
@@ -40,19 +42,23 @@ static int equ_count = 0;
 
 // Source lines
 static char lines[MAX_LINES][MAX_LINE_LEN];
+static char source_paths[MAX_LINES][MAX_PATH_LEN];
+static int source_line_numbers[MAX_LINES];
 static int line_count = 0;
+static char include_stack[MAX_INCLUDE_DEPTH][MAX_PATH_LEN];
 
 static int current_line = 0;
 static int pass = 0;  // 0 = collect labels, 1 = emit code
 
 static void error(const char* msg) {
-    fprintf(stderr, "Error on line %d: %s\n", current_line + 1, msg);
+    fprintf(stderr, "%s:%d: Error: %s\n", source_paths[current_line], source_line_numbers[current_line], msg);
     fprintf(stderr, "  %s\n", lines[current_line]);
     exit(1);
 }
 
 static void error_msg(const char* msg, const char* detail) {
-    fprintf(stderr, "Error on line %d: %s '%s'\n", current_line + 1, msg, detail);
+    fprintf(stderr, "%s:%d: Error: %s '%s'\n", source_paths[current_line], source_line_numbers[current_line], msg,
+            detail);
     fprintf(stderr, "  %s\n", lines[current_line]);
     exit(1);
 }
@@ -122,10 +128,107 @@ static void add_equ(const char* name, int32_t value) {
 static char* trim(char* s) {
     while (isspace((unsigned char)*s))
         s++;
-    char* end = s + strlen(s) - 1;
-    while (end > s && isspace((unsigned char)*end))
-        *end-- = '\0';
+    size_t length = strlen(s);
+    while (length > 0 && isspace((unsigned char)s[length - 1]))
+        s[--length] = '\0';
     return s;
+}
+
+static void source_error(const char* path, int line_number, const char* msg) {
+    fprintf(stderr, "%s:%d: Error: %s\n", path, line_number, msg);
+    exit(1);
+}
+
+static void resolve_include_path(char* result, const char* source_path, const char* include_path) {
+    if (include_path[0] == '/') {
+        if (snprintf(result, MAX_PATH_LEN, "%s", include_path) >= MAX_PATH_LEN)
+            source_error(source_path, 0, "include path is too long");
+        return;
+    }
+
+    const char* slash = strrchr(source_path, '/');
+    int length;
+    if (slash) {
+        size_t directory_length = (size_t)(slash - source_path + 1);
+        length = snprintf(result, MAX_PATH_LEN, "%.*s%s", (int)directory_length, source_path, include_path);
+    } else {
+        length = snprintf(result, MAX_PATH_LEN, "%s", include_path);
+    }
+    if (length < 0 || length >= MAX_PATH_LEN)
+        source_error(source_path, 0, "include path is too long");
+}
+
+static int parse_include(const char* line, char* include_path, const char* source_path, int line_number) {
+    char copy[MAX_LINE_LEN];
+    snprintf(copy, sizeof(copy), "%s", line);
+    char* directive = trim(copy);
+    size_t directive_length = strlen(".include");
+    if (strncmp(directive, ".include", directive_length) != 0 ||
+        (!isspace((unsigned char)directive[directive_length]) && directive[directive_length] != '\0'))
+        return 0;
+
+    char* argument = directive + directive_length;
+    while (isspace((unsigned char)*argument))
+        argument++;
+    if (*argument != '"')
+        source_error(source_path, line_number, ".include requires a quoted path");
+
+    argument++;
+    char* quote = strchr(argument, '"');
+    if (!quote)
+        source_error(source_path, line_number, "unterminated .include path");
+    *quote = '\0';
+    if (!*argument)
+        source_error(source_path, line_number, ".include path must not be empty");
+    if (snprintf(include_path, MAX_PATH_LEN, "%s", argument) >= MAX_PATH_LEN)
+        source_error(source_path, line_number, "include path is too long");
+    return 1;
+}
+
+static void load_source_file(const char* path, int depth) {
+    if (depth >= MAX_INCLUDE_DEPTH)
+        source_error(path, 0, "maximum include depth exceeded");
+    for (int i = 0; i < depth; i++) {
+        if (strcmp(include_stack[i], path) == 0)
+            source_error(path, 0, "recursive include detected");
+    }
+    snprintf(include_stack[depth], MAX_PATH_LEN, "%s", path);
+
+    FILE* file = fopen(path, "r");
+    if (!file) {
+        fprintf(stderr, "Cannot open input file: %s\n", path);
+        exit(1);
+    }
+
+    char line[MAX_LINE_LEN];
+    int source_line = 0;
+    while (fgets(line, sizeof(line), file)) {
+        source_line++;
+        char* newline = strchr(line, '\n');
+        if (newline)
+            *newline = '\0';
+        newline = strchr(line, '\r');
+        if (newline)
+            *newline = '\0';
+
+        char include_path[MAX_PATH_LEN];
+        if (parse_include(line, include_path, path, source_line)) {
+            char resolved_path[MAX_PATH_LEN];
+            resolve_include_path(resolved_path, path, include_path);
+            load_source_file(resolved_path, depth + 1);
+            continue;
+        }
+
+        if (line_count >= MAX_LINES) {
+            fclose(file);
+            source_error(path, source_line, "too many source lines");
+        }
+        snprintf(lines[line_count], MAX_LINE_LEN, "%s", line);
+        snprintf(source_paths[line_count], MAX_PATH_LEN, "%s", path);
+        source_line_numbers[line_count] = source_line;
+        line_count++;
+    }
+    fclose(file);
 }
 
 // Register name to number
@@ -879,29 +982,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    FILE* fin = fopen(argv[1], "r");
-    if (!fin) {
-        fprintf(stderr, "Cannot open input file: %s\n", argv[1]);
-        return 1;
-    }
-
-    // Read all lines
-    while (fgets(lines[line_count], MAX_LINE_LEN, fin)) {
-        // Remove trailing newline
-        char* nl = strchr(lines[line_count], '\n');
-        if (nl)
-            *nl = '\0';
-        nl = strchr(lines[line_count], '\r');
-        if (nl)
-            *nl = '\0';
-        line_count++;
-        if (line_count >= MAX_LINES) {
-            fprintf(stderr, "Too many lines\n");
-            fclose(fin);
-            return 1;
-        }
-    }
-    fclose(fin);
+    load_source_file(argv[1], 0);
 
     // Pass 0: collect labels
     pass = 0;
