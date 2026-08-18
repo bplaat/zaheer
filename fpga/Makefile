@@ -27,7 +27,7 @@ $(TARGET)/taro_font.mem: taro/font.pf | $(TARGET)
 	xxd -p -c 1 $< > $@
 
 # Synthesis
-$(TARGET)/top.json: top.v cpu.v uart_tx.v uart_rx.v taro/taro.v taro/text_mode.v taro/hdmi.v $(TARGET)/boot.mem $(TARGET)/taro_font.mem | $(TARGET)
+$(TARGET)/top.json: top.v cpu.v uart/uart.v uart/uart_tx.v uart/uart_rx.v taro/taro.v taro/text_mode.v taro/hdmi.v $(TARGET)/boot.mem $(TARGET)/taro_font.mem | $(TARGET)
 	yosys -p "read_verilog top.v; synth_gowin -no-rw-check -top top -json $@"
 
 # Place and Route
@@ -42,9 +42,21 @@ $(TARGET)/top.fs: $(TARGET)/top_pnr.json | $(TARGET)
 $(TARGET)/text_mode_tb: taro/text_mode_tb.v taro/text_mode.v $(TARGET)/taro_font.mem | $(TARGET)
 	iverilog -g2012 -s text_mode_tb -o $@ taro/text_mode_tb.v taro/text_mode.v
 
+$(TARGET)/uart_tx_tb: uart/uart_tx_tb.v uart/uart_tx.v | $(TARGET)
+	iverilog -g2012 -s uart_tx_tb -o $@ $^
+
+$(TARGET)/uart_rx_tb: uart/uart_rx_tb.v uart/uart_rx.v | $(TARGET)
+	iverilog -g2012 -s uart_rx_tb -o $@ $^
+
+$(TARGET)/uart_tb: uart/uart_tb.v uart/uart.v uart/uart_tx.v uart/uart_rx.v | $(TARGET)
+	iverilog -g2012 -s uart_tb -o $@ $^
+
 .PHONY: test
-test: $(TARGET)/text_mode_tb
+test: $(TARGET)/text_mode_tb $(TARGET)/uart_tx_tb $(TARGET)/uart_rx_tb $(TARGET)/uart_tb
 	vvp $(TARGET)/text_mode_tb
+	vvp $(TARGET)/uart_tx_tb
+	vvp $(TARGET)/uart_rx_tb
+	vvp $(TARGET)/uart_tb
 
 # Actions
 .PHONY: load
@@ -57,7 +69,7 @@ flash: $(TARGET)/top.fs
 
 .PHONY: serial
 serial:
-	picocom -b 115200 /dev/tty.usbserial-1101
+	picocom -b 115200 /dev/tty.usbserial-11101
 
 .PHONY: clean
 clean:
