@@ -119,7 +119,7 @@ end
 
 // === Taro Text Video Device ===
 localparam VIDEO_BASE = 32'h80000000;
-localparam VIDEO_SIZE = 32'h00002580;
+localparam VIDEO_SIZE = 32'h00002D80;
 wire video_sel = (cpu_mem_addr >= VIDEO_BASE) &&
                  (cpu_mem_addr < VIDEO_BASE + VIDEO_SIZE);
 wire [11:0] video_word_addr = video_sel ? cpu_mem_addr[13:2] : 12'b0;

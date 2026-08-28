@@ -9,6 +9,8 @@
 .equ LED_REG,         0x60000000
 .equ VIDEO_BASE,      0x80000000
 .equ VIDEO_END,       0x80002580
+.equ FONT_BASE,       0x80002580
+.equ FONT_END,        0x80002D80
 .equ VIDEO_LAST_ROW,  0x800024e0
 .equ VIDEO_COLS,      80
 .equ VIDEO_ROWS,      60

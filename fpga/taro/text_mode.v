@@ -30,25 +30,82 @@ module text_mode(
 );
 
 localparam TEXT_WORDS = 2400;
+localparam FONT_WORDS = 512;
+localparam FONT_WORD_BASE = TEXT_WORDS;
+localparam TOTAL_WORDS = TEXT_WORDS + FONT_WORDS;
 
-// Each CPU word contains two adjacent 16-bit character cells. Splitting even
-// and odd cells into separate memories permits a 32-bit CPU access alongside
-// the single-cell display read port.
-(* syn_ramstyle = "block_ram" *) reg [15:0] text_even [0:TEXT_WORDS - 1];
-(* syn_ramstyle = "block_ram" *) reg [15:0] text_odd  [0:TEXT_WORDS - 1];
+// Each CPU word contains two adjacent 16-bit character cells. Separate byte
+// banks match the block RAM write granularity while permitting a 32-bit CPU
+// access alongside the single-cell display read port.
+(* syn_ramstyle = "block_ram" *) reg [7:0] text_even_char [0:TEXT_WORDS - 1];
+(* syn_ramstyle = "block_ram" *) reg [7:0] text_even_attr [0:TEXT_WORDS - 1];
+(* syn_ramstyle = "block_ram" *) reg [7:0] text_odd_char  [0:TEXT_WORDS - 1];
+(* syn_ramstyle = "block_ram" *) reg [7:0] text_odd_attr  [0:TEXT_WORDS - 1];
 
-wire cpu_addr_valid = cpu_addr < TEXT_WORDS;
-wire [11:0] safe_cpu_addr = cpu_addr_valid ? cpu_addr : 12'b0;
+wire text_addr_valid = cpu_addr < TEXT_WORDS;
+wire font_addr_valid = cpu_addr >= FONT_WORD_BASE && cpu_addr < TOTAL_WORDS;
+wire [11:0] safe_text_addr = text_addr_valid ? cpu_addr : 12'b0;
+wire [8:0] safe_font_addr = font_addr_valid ? cpu_addr - FONT_WORD_BASE : 9'b0;
+
+// Four banks hold four consecutive font rows. These memories are written by
+// the CPU during boot and read by the display on the pixel clock.
+(* syn_ramstyle = "block_ram" *) reg [7:0] font_byte0 [0:FONT_WORDS - 1];
+(* syn_ramstyle = "block_ram" *) reg [7:0] font_byte1 [0:FONT_WORDS - 1];
+(* syn_ramstyle = "block_ram" *) reg [7:0] font_byte2 [0:FONT_WORDS - 1];
+(* syn_ramstyle = "block_ram" *) reg [7:0] font_byte3 [0:FONT_WORDS - 1];
+
+reg [7:0] cpu_text_even_char_q;
+reg [7:0] cpu_text_even_attr_q;
+reg [7:0] cpu_text_odd_char_q;
+reg [7:0] cpu_text_odd_attr_q;
+reg [7:0] cpu_font_byte0_q;
+reg [7:0] cpu_font_byte1_q;
+reg [7:0] cpu_font_byte2_q;
+reg [7:0] cpu_font_byte3_q;
+reg [1:0] cpu_read_select_q;
 
 always @(posedge cpu_clk) begin
-    cpu_rdata <= cpu_addr_valid ?
-        {text_odd[safe_cpu_addr], text_even[safe_cpu_addr]} : 32'b0;
-    if (cpu_we && cpu_addr_valid) begin
-        if (cpu_wstrb[0]) text_even[safe_cpu_addr][7:0]  <= cpu_wdata[7:0];
-        if (cpu_wstrb[1]) text_even[safe_cpu_addr][15:8] <= cpu_wdata[15:8];
-        if (cpu_wstrb[2]) text_odd[safe_cpu_addr][7:0]   <= cpu_wdata[23:16];
-        if (cpu_wstrb[3]) text_odd[safe_cpu_addr][15:8]  <= cpu_wdata[31:24];
+    cpu_text_even_char_q <= text_even_char[safe_text_addr];
+    cpu_text_even_attr_q <= text_even_attr[safe_text_addr];
+    cpu_text_odd_char_q <= text_odd_char[safe_text_addr];
+    cpu_text_odd_attr_q <= text_odd_attr[safe_text_addr];
+    cpu_font_byte0_q <= font_byte0[safe_font_addr];
+    cpu_font_byte1_q <= font_byte1[safe_font_addr];
+    cpu_font_byte2_q <= font_byte2[safe_font_addr];
+    cpu_font_byte3_q <= font_byte3[safe_font_addr];
+    cpu_read_select_q <= text_addr_valid ? 2'b01 :
+                         font_addr_valid ? 2'b10 : 2'b00;
+
+    if (cpu_we && text_addr_valid) begin
+        if (cpu_wstrb[0]) text_even_char[safe_text_addr] <= cpu_wdata[7:0];
+        if (cpu_wstrb[1]) text_even_attr[safe_text_addr] <= cpu_wdata[15:8];
+        if (cpu_wstrb[2]) text_odd_char[safe_text_addr]  <= cpu_wdata[23:16];
+        if (cpu_wstrb[3]) text_odd_attr[safe_text_addr]  <= cpu_wdata[31:24];
     end
+    if (cpu_we && font_addr_valid) begin
+        if (cpu_wstrb[0]) font_byte0[safe_font_addr] <= cpu_wdata[7:0];
+        if (cpu_wstrb[1]) font_byte1[safe_font_addr] <= cpu_wdata[15:8];
+        if (cpu_wstrb[2]) font_byte2[safe_font_addr] <= cpu_wdata[23:16];
+        if (cpu_wstrb[3]) font_byte3[safe_font_addr] <= cpu_wdata[31:24];
+    end
+end
+
+always @(*) begin
+    case (cpu_read_select_q)
+        2'b01: cpu_rdata = {
+            cpu_text_odd_attr_q,
+            cpu_text_odd_char_q,
+            cpu_text_even_attr_q,
+            cpu_text_even_char_q
+        };
+        2'b10: cpu_rdata = {
+            cpu_font_byte3_q,
+            cpu_font_byte2_q,
+            cpu_font_byte1_q,
+            cpu_font_byte0_q
+        };
+        default: cpu_rdata = 32'b0;
+    endcase
 end
 
 wire [6:0] text_col = hcnt[9:3];
@@ -60,11 +117,15 @@ wire [12:0] active_cell_addr = (extended_text_row << 6) +
 wire [12:0] display_cell_addr = de ? active_cell_addr : 13'b0;
 wire [11:0] display_word_addr = display_cell_addr[12:1];
 
-reg [15:0] display_even_q;
-reg [15:0] display_odd_q;
+reg [7:0] display_even_char_q;
+reg [7:0] display_even_attr_q;
+reg [7:0] display_odd_char_q;
+reg [7:0] display_odd_attr_q;
 always @(posedge px_clk) begin
-    display_even_q <= text_even[display_word_addr];
-    display_odd_q  <= text_odd[display_word_addr];
+    display_even_char_q <= text_even_char[display_word_addr];
+    display_even_attr_q <= text_even_attr[display_word_addr];
+    display_odd_char_q <= text_odd_char[display_word_addr];
+    display_odd_attr_q <= text_odd_attr[display_word_addr];
 end
 
 // Stage 1 accompanies the synchronous text-memory read.
@@ -79,21 +140,26 @@ reg [2:0] glyph_x_s2;
 reg       de_s2, hsync_s2, vsync_s2;
 reg [10:0] font_addr;
 
-// Stage 3 aligns the cell attribute and video control signals with font_q.
+// Stage 3 aligns the cell attribute and video control signals with font_word_q.
 reg [7:0] attr_s3;
 reg [2:0] glyph_x_s3;
 reg       de_s3, hsync_s3, vsync_s3;
 
-wire [15:0] display_cell = cell_odd_s1 ? display_odd_q : display_even_q;
+wire [15:0] display_cell = cell_odd_s1 ?
+    {display_odd_attr_q, display_odd_char_q} :
+    {display_even_attr_q, display_even_char_q};
 
-(* syn_ramstyle = "block_ram" *) reg [7:0] font [0:2047];
-reg [7:0] font_q;
-initial begin
-    $readmemh("target/taro_font.mem", font);
-end
+reg [31:0] font_word_q;
+reg [1:0] font_byte_s3;
 
 always @(posedge px_clk) begin
-    font_q <= font[font_addr];
+    font_word_q <= {
+        font_byte3[font_addr[10:2]],
+        font_byte2[font_addr[10:2]],
+        font_byte1[font_addr[10:2]],
+        font_byte0[font_addr[10:2]]
+    };
+    font_byte_s3 <= font_addr[1:0];
 
     if (px_reset) begin
         cell_odd_s1 <= 0;
@@ -138,7 +204,17 @@ always @(posedge px_clk) begin
     end
 end
 
-wire glyph_pixel = font_q[7 - glyph_x_s3];
+reg [7:0] font_byte;
+always @(*) begin
+    case (font_byte_s3)
+        2'b00: font_byte = font_word_q[7:0];
+        2'b01: font_byte = font_word_q[15:8];
+        2'b10: font_byte = font_word_q[23:16];
+        default: font_byte = font_word_q[31:24];
+    endcase
+end
+
+wire glyph_pixel = font_byte[7 - glyph_x_s3];
 wire [3:0] color = glyph_pixel ? attr_s3[3:0] : attr_s3[7:4];
 
 always @(*) begin

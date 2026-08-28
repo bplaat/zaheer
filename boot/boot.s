@@ -8,6 +8,17 @@ _start:
     lui sp, %hi(STACK_TOP)
     addi sp, sp, %lo(STACK_TOP)
 
+    ; Copy the font embedded in boot ROM to writable Taro font RAM.
+    la t0, font_data
+    li t1, FONT_BASE
+    li t2, FONT_END
+font_load_loop:
+    lw t3, 0(t0)
+    sw t3, 0(t1)
+    addi t0, t0, 4
+    addi t1, t1, 4
+    blt t1, t2, font_load_loop
+
     ; Clear text video RAM and initialise the cursor.
     li t0, VIDEO_BASE
     li t1, VIDEO_END
@@ -43,3 +54,7 @@ str_prompt:
     .asciz "> "
 str_crlf:
     .asciz "\r\n"
+
+.balign 4
+font_data:
+    .incbin "../fpga/taro/font.pf"

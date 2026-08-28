@@ -7,6 +7,9 @@
 `timescale 1ns/1ps
 
 module text_mode_tb;
+    localparam FONT_WORD_BASE = 2400;
+    localparam TOTAL_WORDS = 2912;
+
     reg cpu_clk = 0;
     reg cpu_we = 0;
     reg [11:0] cpu_addr = 0;
@@ -138,7 +141,18 @@ module text_mode_tb;
         cpu_write(0, 32'h12345678, 4'b0101);
         cpu_expect(0, 32'h4C341F78);
 
-        // Restore 'A' and a solid block. Row zero of 'A' is 00111000.
+        // Load the font rows used below through the CPU font RAM window.
+        // 'A' row zero is 00111000; glyph DB is solid.
+        cpu_write(FONT_WORD_BASE + 64, 32'h00000000, 4'b0001);
+        cpu_write(FONT_WORD_BASE + 130, 32'h00000038, 4'b0001);
+        cpu_write(FONT_WORD_BASE + 438, 32'h000000FF, 4'b0001);
+        cpu_write(FONT_WORD_BASE + 439, 32'hFF000000, 4'b1000);
+        cpu_write(FONT_WORD_BASE, 32'h44332211, 4'b1111);
+        cpu_expect(FONT_WORD_BASE, 32'h44332211);
+        cpu_write(FONT_WORD_BASE, 32'hAA00CC00, 4'b1010);
+        cpu_expect(FONT_WORD_BASE, 32'hAA33CC11);
+
+        // Restore 'A' and a solid block.
         cpu_write(0, 32'h4CDB1F41, 4'b1111);
         pixel_expect(0, 0, 24'h0000AA);
         pixel_expect(2, 0, 24'hFFFFFF);
@@ -157,8 +171,8 @@ module text_mode_tb;
         end
 
         // Out-of-range accesses read zero and cannot alias valid word zero.
-        cpu_write(2400, 32'hDEADBEEF, 4'b1111);
-        cpu_expect(2400, 32'h00000000);
+        cpu_write(TOTAL_WORDS, 32'hDEADBEEF, 4'b1111);
+        cpu_expect(TOTAL_WORDS, 32'h00000000);
         cpu_expect(0, 32'h4CDB1F41);
 
         // Last framebuffer cell: word 2399, odd half, pixel (639,479).

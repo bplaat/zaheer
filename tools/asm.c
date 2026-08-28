@@ -6,7 +6,8 @@
 
 // Basic RV32I assembler - outputs 32-bit hex words (one per line)
 // Supports: all RV32I instructions, common pseudo-instructions,
-// %hi/%lo relocations, labels, GAS-style includes, and basic directives.
+// %hi/%lo relocations, labels, GAS-style includes, binary includes, and basic
+// directives.
 
 #include <ctype.h>
 #include <stdint.h>
@@ -556,6 +557,35 @@ static void process_line(char* raw_line) {
     if (strcmp(mnem, ".byte") == 0) {
         for (int i = 1; i < token_count; i++)
             emit_byte((uint8_t)parse_imm(tokens[i]));
+        return;
+    }
+
+    if (strcmp(mnem, ".incbin") == 0) {
+        char* argument = strchr(line, '"');
+        if (!argument)
+            error(".incbin requires a quoted path");
+        argument++;
+        char* quote = strchr(argument, '"');
+        if (!quote)
+            error("unterminated .incbin path");
+        *quote = '\0';
+        if (!*argument)
+            error(".incbin path must not be empty");
+
+        char path[MAX_PATH_LEN];
+        resolve_include_path(path, source_paths[current_line], argument);
+        FILE* file = fopen(path, "rb");
+        if (!file)
+            error_msg("cannot open binary include", path);
+
+        int byte;
+        while ((byte = fgetc(file)) != EOF)
+            emit_byte((uint8_t)byte);
+        if (ferror(file)) {
+            fclose(file);
+            error_msg("cannot read binary include", path);
+        }
+        fclose(file);
         return;
     }
 
